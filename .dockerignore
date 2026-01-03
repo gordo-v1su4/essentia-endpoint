@@ -1,0 +1,15 @@
+# Git
+.git
+.gitignore
+
+# Local Testing UI
+# Keep production image API-only
+app/
+
+# Local Dev
+__pycache__/
+.venv/
+models/
+
+# OS
+.DS_Store

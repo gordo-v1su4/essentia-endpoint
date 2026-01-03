@@ -16,4 +16,4 @@ api/models/
 Thumbs.db
 
 # Docker
-.dockerignore
+# .dockerignore should be included in repo
