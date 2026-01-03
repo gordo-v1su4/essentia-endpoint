@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Essentia Analysis V2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0c;
+            --panel: #16161a;
+            --accent: #8b5cf6;
+            --accent-glow: rgba(139, 92, 246, 0.3);
+            --text: #f4f4f5;
+            --text-dim: #a1a1aa;
+            --onset: #22c55e;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        p.subtitle {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+
+        .drop-zone {
+            background: var(--panel);
+            border: 2px dashed var(--border);
+            border-radius: 1rem;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.drag-over {
+            border-color: var(--accent);
+            background: rgba(139, 92, 246, 0.05);
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+
+        .drop-zone p {
+            font-size: 1.2rem;
+            color: var(--text-dim);
+        }
+
+        #waveform-container {
+            background: var(--panel);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            display: none;
+            position: relative;
+        }
+
+        #waveform {
+            width: 100%;
+            height: 128px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            background: #3f3f46;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            background: var(--panel);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        #status {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--accent);
+            margin-top: 1rem;
+            height: 1.2rem;
+        }
+
+        .marker {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--onset);
+            pointer-events: none;
+            opacity: 0.6;
+            z-index: 10;
+        }
+
+        .segment-track {
+            height: 24px;
+            width: 100%;
+            margin-top: 0.5rem;
+            display: flex;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .segment {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: white;
+            text-transform: uppercase;
+            border-right: 1px solid rgba(0, 0, 0, 0.2);
+            transition: opacity 0.2s;
+        }
+
+        .segment:hover {
+            opacity: 0.8;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Essentia Analysis V2</h1>
+            <p class="subtitle">High-quality audio segmentation and onset detection</p>
+        </header>
+
+        <div id="drop-zone" class="drop-zone">
+            <p>Drag & drop an audio file here or click to upload</p>
+            <input type="file" id="file-input" hidden accept="audio/*">
+        </div>
+
+        <div id="loading" class="spinner"></div>
+        <div id="status"></div>
+
+        <div id="waveform-container">
+            <div id="waveform"></div>
+            <div id="segment-track" class="segment-track"></div>
+            <div class="controls">
+                <button id="play-btn">Play / Pause</button>
+            </div>
+        </div>
+
+        <div id="stats" class="stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-label">BPM</div>
+                <div id="stat-bpm" class="stat-value">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Onsets</div>
+                <div id="stat-onsets" class="stat-value">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Sections</div>
+                <div id="stat-sections" class="stat-value">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Duration</div>
+                <div id="stat-duration" class="stat-value">--s</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wavesurfer.js -->
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:7000';
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const waveformContainer = document.getElementById('waveform-container');
+        const stats = document.getElementById('stats');
+        const status = document.getElementById('status');
+        const loading = document.getElementById('loading');
+        const playBtn = document.getElementById('play-btn');
+        const segmentTrack = document.getElementById('segment-track');
+
+        let ws;
+
+        function initWaveSurfer(url) {
+            if (ws) ws.destroy();
+
+            ws = WaveSurfer.create({
+                container: '#waveform',
+                waveColor: '#3f3f46',
+                progressColor: '#8b5cf6',
+                cursorColor: '#fff',
+                barWidth: 2,
+                barRadius: 3,
+                responsive: true,
+                height: 128,
+            });
+
+            ws.load(url);
+
+            ws.on('ready', () => {
+                waveformContainer.style.display = 'block';
+                status.innerText = 'Audio Ready';
+            });
+
+            playBtn.onclick = () => ws.playPause();
+        }
+
+        dropZone.onclick = () => fileInput.click();
+
+        dropZone.ondragover = (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        };
+
+        dropZone.ondragleave = () => dropZone.classList.remove('drag-over');
+
+        dropZone.ondrop = (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        };
+
+        fileInput.onchange = (e) => {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        };
+
+        async function handleFile(file) {
+            status.innerText = 'Analyzing...';
+            loading.style.display = 'block';
+            waveformContainer.style.display = 'none';
+            stats.style.display = 'none';
+            segmentTrack.innerHTML = '';
+
+            const url = URL.createObjectURL(file);
+            initWaveSurfer(url);
+
+            const existingMarkers = document.querySelectorAll('.marker');
+            existingMarkers.forEach(m => m.remove());
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/analyze/full`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Analysis failed');
+
+                const data = await response.json();
+                displayResults(data);
+                status.innerText = 'Analysis Complete';
+            } catch (err) {
+                console.error(err);
+                status.innerText = 'Error: ' + err.message;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            stats.style.display = 'grid';
+            document.getElementById('stat-bpm').innerText = Math.round(data.bpm);
+            document.getElementById('stat-onsets').innerText = data.onsets.length;
+            document.getElementById('stat-sections').innerText = data.structure.sections.length;
+            document.getElementById('stat-duration').innerText = Math.round(data.duration) + 's';
+
+            const colors = {
+                'intro': '#3b82f6',
+                'outro': '#6b7280',
+                'chorus': '#ec4899',
+                'verse': '#8b5cf6',
+                'section': '#10b981'
+            };
+
+            data.structure.sections.forEach(seg => {
+                const div = document.createElement('div');
+                div.className = 'segment';
+                div.style.width = (seg.duration / data.duration * 100) + '%';
+                div.style.backgroundColor = colors[seg.label] || '#4b5563';
+                div.innerText = seg.label;
+                div.title = `${seg.label}: ${seg.start.toFixed(2)} - ${seg.end.toFixed(2)}`;
+                segmentTrack.appendChild(div);
+            });
+
+            const waveElem = document.getElementById('waveform');
+            data.onsets.forEach(time => {
+                const marker = document.createElement('div');
+                marker.className = 'marker';
+                marker.style.left = (time / data.duration * 100) + '%';
+                waveElem.appendChild(marker);
+            });
+        }
+    </script>
+</body>
+
+</html>
