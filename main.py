@@ -11,11 +11,12 @@ import os
 import uvicorn
 
 # Internal imports
-from api.models import RhythmAnalysis, StructureAnalysis, FullAnalysis
+from api.models import RhythmAnalysis, StructureAnalysis, FullAnalysis, ClassificationAnalysis
 from services.analysis import (
     load_audio, 
     analyze_rhythm_logic, 
-    analyze_structure_logic
+    analyze_structure_logic,
+    analyze_classification_logic
 )
 
 # Configuration
@@ -81,9 +82,27 @@ async def analyze_structure(file: UploadFile = File(...)):
         if os.path.exists(tmp_path): 
             os.unlink(tmp_path)
 
+        if os.path.exists(tmp_path): 
+            os.unlink(tmp_path)
+
+@app.post("/analyze/classification", response_model=ClassificationAnalysis, tags=["Analysis"])
+async def analyze_classification(file: UploadFile = File(...)):
+    """Analyze Genre, Mood, and Tags using Essentia TensorFlow models."""
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+        content = await file.read()
+        tmp.write(content)
+        tmp_path = tmp.name
+    
+    try:
+        audio = load_audio(tmp_path)
+        return analyze_classification_logic(audio)
+    finally:
+        if os.path.exists(tmp_path): 
+            os.unlink(tmp_path)
+
 @app.post("/analyze/full", response_model=FullAnalysis, tags=["Analysis"])
 async def analyze_full(file: UploadFile = File(...)):
-    """Perform full rhythm and structural analysis."""
+    """Perform full rhythm, structural, and classification analysis."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
         content = await file.read()
         tmp.write(content)
@@ -93,10 +112,12 @@ async def analyze_full(file: UploadFile = File(...)):
         audio = load_audio(tmp_path)
         rhythm = analyze_rhythm_logic(audio)
         structure = analyze_structure_logic(audio)
+        classification = analyze_classification_logic(audio)
         
         return {
             **rhythm,
-            "structure": structure
+            "structure": structure,
+            "classification": classification
         }
     finally:
         if os.path.exists(tmp_path): 

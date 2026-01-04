@@ -18,5 +18,16 @@ class StructureAnalysis(BaseModel):
     sections: List[Section]
     boundaries: List[float]
 
+class ClassificationResult(BaseModel):
+    label: str
+    confidence: float
+    all_scores: Dict[str, float]
+
+class ClassificationAnalysis(BaseModel):
+    genres: ClassificationResult
+    moods: ClassificationResult
+    tags: List[str]
+
 class FullAnalysis(RhythmAnalysis):
     structure: StructureAnalysis
+    classification: Optional[ClassificationAnalysis] = None

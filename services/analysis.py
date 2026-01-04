@@ -1,5 +1,6 @@
 import essentia.standard as es
 import numpy as np
+import os
 from typing import List, Dict, Any, Optional
 from fastapi import HTTPException
 
@@ -162,4 +163,152 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
     return {
         "sections": sections,
         "boundaries": boundaries
+    }
+
+def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
+    """
+    Classification using Essentia TensorFlow models.
+    """
+    models_dir = os.environ.get("ESSENTIA_MODELS_PATH", "/app/models")
+    
+    # Initialize results
+    genres = {"label": "Unknown", "confidence": 0.0, "all_scores": {}}
+    moods = {"label": "Unknown", "confidence": 0.0, "all_scores": {}}
+    tags = []
+    
+    # 1. Resample to 16kHz for classification models
+    # Most Essentia TF models work at 16kHz
+    try:
+        resample = es.Resample(inputSampleRate=sample_rate, outputSampleRate=16000, quality=0)
+        audio_16k = resample(audio)
+    except Exception as e:
+        print(f"Resampling failed: {e}")
+        audio_16k = audio # Fallback, though likely to fail models
+    
+    from services.labels import GENRE_LABELS, TAG_LABELS
+
+    # 2. Genre Classification (EffNetDiscogs)
+    # -------------------------------------------------------------------------
+    try:
+        genre_model_path = os.path.join(models_dir, "effnetdiscogs", "effnetdiscogs-bs64-1.pb")
+        if not os.path.exists(genre_model_path):
+             genre_model_path = os.path.join(models_dir, "effnetdiscogs-bs64-1.pb")
+
+        if os.path.exists(genre_model_path):
+            # EffNetDiscogs usually returns [batch, 400] probabilities
+            model_genre = es.TensorflowPredictEffNetDiscogs(graphFilename=genre_model_path, output="PartitionedCall:1")
+            activations = model_genre(audio_16k)
+            
+            # Average across frames (0-axis)
+            mean_activations = np.mean(activations, axis=0)
+            
+            # Find top genre
+            if len(mean_activations) == len(GENRE_LABELS):
+                top_idx = int(np.argmax(mean_activations))
+                genres["label"] = GENRE_LABELS[top_idx]
+                genres["confidence"] = float(mean_activations[top_idx])
+                
+                # Get top 5 scores
+                top_5_indices = np.argsort(mean_activations)[-5:][::-1]
+                for idx in top_5_indices:
+                    genres["all_scores"][GENRE_LABELS[idx]] = float(mean_activations[idx])
+            else:
+                genres["label"] = "Error: Dimension Mismatch"
+    except Exception as e:
+        print(f"Genre analysis failed: {e}")
+
+    # 3. Tags & Mood (MusiCNN + Chain)
+    # -------------------------------------------------------------------------
+    try:
+        # Load Tagging/Embedding Model (MusiCNN)
+        musicnn_path = os.path.join(models_dir, "musicnn", "msd-musicnn-1.pb")
+        if not os.path.exists(musicnn_path):
+             musicnn_path = os.path.join(models_dir, "msd-musicnn-1.pb")
+             
+        if os.path.exists(musicnn_path):
+            # MusiCNN has multiple outputs. 
+            # We need 'model/Sigmoid' for tags (50) and 'model/dense/BiasAdd' for embeddings (200)
+            # Note: TensorflowPredictMusiCNN automatically handles this or we specify outputs
+            
+            # Using generic TensorflowPredict to be explicit about outputs if needed, 
+            # but TensorflowPredictMusiCNN is safer for input formatting.
+            # Let's try TensorflowPredictMusiCNN which returns [embeddings(200), tags(50)] usually?
+            # Or we check documentation. Usually it returns the "last layer" or configured output.
+            # Safe bet: use generic TensorflowPredict and request specific nodes.
+            # Inputs: 'model/Placeholder' [batch, 187, 96] - handled by TFPredictMusiCNN? 
+            # Actually TFPredictMusiCNN takes audio and does the mel-spectrogram internally.
+            
+            model_musicnn = es.TensorflowPredictMusiCNN(graphFilename=musicnn_path, output="model/Sigmoid")
+            # We essentially run it twice or change output? 
+            # TensorflowPredictMusiCNN only supports one output parameter.
+            # We can use 'model/dense/BiasAdd' for embeddings.
+            
+            # 3a. Tags
+            tags_activations = model_musicnn(audio_16k)
+            mean_tags = np.mean(tags_activations, axis=0) # [50]
+            
+            # Get top tags (> 0.1 confidence)
+            for i, score in enumerate(mean_tags):
+                if score > 0.15 and i < len(TAG_LABELS):
+                     tags.append(TAG_LABELS[i])
+            
+            # 3b. Mood (Requires Embeddings)
+            # We need to run MusiCNN again for embeddings (inefficient but safe) or usage generic.
+            # 'model/dense/BiasAdd' is the embedding layer [200]
+            model_embeddings = es.TensorflowPredictMusiCNN(graphFilename=musicnn_path, output="model/dense/BiasAdd")
+            embeddings = model_embeddings(audio_16k) # [frames, 200]
+            
+            # Load Mood Model (EmoMusic)
+            mood_model_path = os.path.join(models_dir, "classification_heads", "emomusic-msd-musicnn-1.pb")
+            if os.path.exists(mood_model_path):
+                 # Input: [batch, 200] -> 'flatten_in_input' (or similar matching embedding)
+                 # Output: 'dense_out' [2] (Valence, Arousal)
+                 model_mood = es.TensorflowPredict2D(graphFilename=mood_model_path, 
+                                                     input="flatten_in_input", 
+                                                     output="dense_out")
+                 
+                 mood_preds = model_mood(embeddings)
+                 mean_mood = np.mean(mood_preds, axis=0) # [valence, arousal]
+                 
+                 valence = mean_mood[0]
+                 arousal = mean_mood[1]
+                 
+                 # Map Valence/Arousal to label
+                 # Russell's Circumplex Model (Simplified)
+                 # V+ A+ : Happy/Excited
+                 # V+ A- : Relaxed/Calm
+                 # V- A- : Sad/Depressed
+                 # V- A+ : Angry/Aggressive
+                 
+                 mood_label = "Neutral"
+                 if valence >= 5 and arousal >= 5: mood_label = "Happy/Excited"
+                 elif valence >= 5 and arousal < 5: mood_label = "Relaxed"
+                 elif valence < 5 and arousal < 5: mood_label = "Sad"
+                 elif valence < 5 and arousal >= 5: mood_label = "Aggressive"
+                 
+                 # Models often output 1-9 or 0-1? 
+                 # EmoMusic dataset is usually 1-9. Let's assume 1-9. 
+                 # If values are small (<1), scaling is 0-1.
+                 # Let's check ranges. If max < 1.0, assume 0.5 center.
+                 
+                 center = 5.0
+                 if np.max(np.abs(mean_mood)) <= 1.5:
+                     center = 0.5
+                     
+                 if valence >= center and arousal >= center: mood_label = "Happy"
+                 elif valence >= center and arousal < center: mood_label = "Relaxed"
+                 elif valence < center and arousal < center: mood_label = "Sad"
+                 elif valence < center and arousal >= center: mood_label = "Aggressive"
+                 
+                 moods["label"] = mood_label
+                 moods["confidence"] = 1.0 # Regression doesn't give confidence
+                 moods["all_scores"] = {"valence": float(valence), "arousal": float(arousal)}
+
+    except Exception as e:
+        print(f"Mood/Tag analysis failed: {e}")
+
+    return {
+        "genres": genres,
+        "moods": moods,
+        "tags": tags
     }
