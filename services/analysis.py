@@ -196,24 +196,30 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100) ->
 
         if os.path.exists(genre_model_path):
             # EffNetDiscogs usually returns [batch, 400] probabilities
-            model_genre = es.TensorflowPredictEffNetDiscogs(graphFilename=genre_model_path, output="PartitionedCall:1")
-            activations = model_genre(audio_16k)
-            
-            # Average across frames (0-axis)
-            mean_activations = np.mean(activations, axis=0)
-            
-            # Find top genre
-            if len(mean_activations) == len(GENRE_LABELS):
-                top_idx = int(np.argmax(mean_activations))
-                genres["label"] = GENRE_LABELS[top_idx]
-                genres["confidence"] = float(mean_activations[top_idx])
+            # If TensorflowPredictEffNetDiscogs is not available (missing in some wheels), we skip.
+            # Reimplementing the patching logic manually is complex.
+            if hasattr(es, 'TensorflowPredictEffNetDiscogs'):
+                model_genre = es.TensorflowPredictEffNetDiscogs(graphFilename=genre_model_path, output="PartitionedCall:1")
+                activations = model_genre(audio_16k)
                 
-                # Get top 5 scores
-                top_5_indices = np.argsort(mean_activations)[-5:][::-1]
-                for idx in top_5_indices:
-                    genres["all_scores"][GENRE_LABELS[idx]] = float(mean_activations[idx])
+                # Average across frames (0-axis)
+                mean_activations = np.mean(activations, axis=0)
+                
+                # Find top genre
+                if len(mean_activations) == len(GENRE_LABELS):
+                    top_idx = int(np.argmax(mean_activations))
+                    genres["label"] = GENRE_LABELS[top_idx]
+                    genres["confidence"] = float(mean_activations[top_idx])
+                    
+                    # Get top 5 scores
+                    top_5_indices = np.argsort(mean_activations)[-5:][::-1]
+                    for idx in top_5_indices:
+                        genres["all_scores"][GENRE_LABELS[idx]] = float(mean_activations[idx])
+                else:
+                    genres["label"] = "Error: Dimension Mismatch"
             else:
-                genres["label"] = "Error: Dimension Mismatch"
+                 print("Warning: es.TensorflowPredictEffNetDiscogs not available.")
+                 genres["label"] = "Unavailable (Model Wrapper Missing)"
     except Exception as e:
         print(f"Genre analysis failed: {e}")
 
