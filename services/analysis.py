@@ -107,8 +107,8 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
     
     # 2. Boundary detection using SBic
     # We use a windowed approach if audio is long, but for standard tracks SBic(size=...) is fine.
-    # Note: cp_min_dist is in frames. 1024 hop @ 44.1k is ~23ms. 100 frames ~2.3s.
-    sbic = es.SBic(size=len(mfccs), cp_min_dist=100) 
+    # Note: minLength is in frames. 1024 hop @ 44.1k is ~23ms. 100 frames ~2.3s.
+    sbic = es.SBic(minLength=100) 
     boundaries_frames = sbic(es.array(mfccs))
     
     # Convert boundary frames to seconds
