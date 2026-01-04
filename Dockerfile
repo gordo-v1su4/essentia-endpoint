@@ -43,13 +43,22 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
 
-# Runtime stage
-FROM python:3.11-slim
+# Runtime stage - Use NVIDIA CUDA + Python for GPU support
+# This image includes libcudart and libcuda which TensorFlow needs
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
-# Install git for model download script
+# Install Python 3.11 and git
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+    python3.11 \
+    python3.11-dev \
+    python3-pip \
+    git \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3.11 /usr/bin/python \
+    && ln -sf /usr/bin/python3.11 /usr/bin/python3
+
+# Note: git is already installed in the base image setup above
 
 # Note: Essentia Python package typically includes statically linked libraries
 # If runtime errors occur about missing libraries, we'll add them back
