@@ -116,6 +116,37 @@ def analyze_rhythm_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[st
         }
     }
 
+def generate_fallback_boundaries(duration: float) -> List[float]:
+    """
+    Generate fallback section boundaries when SBic fails.
+    Creates reasonable sections based on typical song structure.
+    """
+    boundaries = [0.0]
+    
+    # Intro: first 10% or 15s, whichever is smaller
+    intro_end = min(duration * 0.10, 15.0)
+    if intro_end > 5:
+        boundaries.append(intro_end)
+    
+    # Main body: divide into ~30s sections
+    main_start = boundaries[-1]
+    outro_start = duration - min(duration * 0.15, 20.0)  # Last 15% or 20s
+    main_duration = outro_start - main_start
+    
+    if main_duration > 20:
+        num_sections = max(2, int(main_duration / 30))  # ~30s per section, at least 2
+        section_duration = main_duration / num_sections
+        
+        for i in range(1, num_sections):
+            boundaries.append(main_start + i * section_duration)
+    
+    # Add outro boundary
+    if duration - outro_start > 5:
+        boundaries.append(outro_start)
+    
+    boundaries.append(duration)
+    return boundaries
+
 def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
     """
     Structural segmentation using SBic and SegmentClustering.
@@ -136,15 +167,42 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
         mfccs.append(m)
     
     # 2. Boundary detection using SBic
-    # We use a windowed approach if audio is long, but for standard tracks SBic(size=...) is fine.
-    # Note: minLength is in frames. 1024 hop @ 44.1k is ~23ms. 100 frames ~2.3s.
-    sbic = es.SBic(minLength=100) 
-    boundaries_frames = sbic(np.array(mfccs, dtype=np.float32))
+    # minLength in frames: at 1024 hop @ 44.1kHz, 1 frame = ~23ms
+    # 300 frames = ~7s minimum section, 500 frames = ~11s
+    # Using 300 frames for better granularity while avoiding micro-segments
+    min_frames = 300
+    
+    # Ensure we have enough frames for SBic to work
+    if len(mfccs) < min_frames * 2:
+        # Audio too short for meaningful segmentation
+        print(f"[Structure] Audio too short ({len(mfccs)} frames), using fallback")
+        boundaries_frames = []
+    else:
+        try:
+            sbic = es.SBic(minLength=min_frames, cpw=1.5, size1=300, inc1=60, size2=200, inc2=40)
+            boundaries_frames = sbic(np.array(mfccs, dtype=np.float32))
+            print(f"[Structure] SBic found {len(boundaries_frames)} boundaries: {boundaries_frames}")
+        except Exception as e:
+            print(f"[Structure] SBic failed: {e}, using fallback")
+            boundaries_frames = []
     
     # Convert boundary frames to seconds
     # SBic returns frame indices relative to the input array.
     bound_secs = sorted([float(f * hop_size / sample_rate) for f in boundaries_frames])
-    boundaries = [0.0] + bound_secs + [duration]
+    
+    # Filter out boundaries that are too close together (< 5s) or at the very start/end
+    filtered_bounds = []
+    for b in bound_secs:
+        if b > 2.0 and b < (duration - 2.0):  # At least 2s from start/end
+            if not filtered_bounds or (b - filtered_bounds[-1]) >= 5.0:  # At least 5s apart
+                filtered_bounds.append(b)
+    
+    boundaries = [0.0] + filtered_bounds + [duration]
+    
+    # If SBic found no useful boundaries, create fallback sections
+    if len(boundaries) <= 2:
+        print(f"[Structure] No boundaries found, generating fallback sections for {duration}s track")
+        boundaries = generate_fallback_boundaries(duration)
     
     # 3. Clustering / Labeling
     # For a high-quality implementation, we could use SegmentClustering here.
@@ -175,25 +233,44 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
             })
 
         # 2. Heuristic Labeling
-        # Identify Intro/Outro first
-        # Compare energies to label Verse/Chorus
+        # Identify Intro/Outro first, then use energy for Verse/Chorus/Bridge
         # Note: This is an improved heuristic until a full classifier is integrated.
         
         avg_energy = np.mean([s["energy"] for s in segment_data]) if segment_data else 0
+        num_segments = len(segment_data)
+        
+        # Track verse/chorus alternation for better labeling
+        verse_count = 0
+        chorus_count = 0
         
         for i, s in enumerate(segment_data):
             label = "section"
             
-            if s["pos"] < 0.15 and i == 0:
+            # First segment with low energy = intro
+            if i == 0 and s["pos"] < 0.15:
                 label = "intro"
-            elif s["pos"] > 0.85 and i == len(segment_data) - 1:
+            # Last segment = outro
+            elif i == num_segments - 1 and s["pos"] > 0.80:
                 label = "outro"
+            # Middle-ish section with notably different energy = bridge
+            elif 0.5 <= s["pos"] <= 0.75 and num_segments >= 5:
+                # Bridge is often in the 50-75% mark and has different energy profile
+                if abs(s["energy"] - avg_energy) < avg_energy * 0.2:
+                    label = "bridge"
+                elif s["energy"] > avg_energy * 1.1:
+                    label = "chorus"
+                    chorus_count += 1
+                else:
+                    label = "verse"
+                    verse_count += 1
             else:
                 # Use relative energy for Verse vs Chorus
                 if s["energy"] > avg_energy * 1.1:
                     label = "chorus"
+                    chorus_count += 1
                 else:
                     label = "verse"
+                    verse_count += 1
             
             sections.append({
                 "start": s["start"],
@@ -202,6 +279,8 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
                 "duration": float(s["end"] - s["start"]),
                 "energy": s["energy"]
             })
+        
+        print(f"[Structure] Labeled {num_segments} sections: {verse_count} verse, {chorus_count} chorus")
     else:
         # Fallback for short audio
         sections.append({
