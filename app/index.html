@@ -7,23 +7,21 @@
     <title>Essentia DAW Analysis</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
-            --bg: #09090b;
-            /* Zinc 950 */
-            --panel: #18181b;
-            /* Zinc 900 */
-            --border: #27272a;
-            /* Zinc 800 */
+            --bg: #050505;
+            --panel: #0d0d0f;
+            --border: #1c1c21;
             --accent: #3b82f6;
-            /* Blue 500 */
-            --accent-dim: #1d4ed8;
-            /* Blue 700 */
-            --text: #f4f4f5;
-            --text-dim: #a1a1aa;
-            --onset: #22c55e;
-            --grid-line: rgba(255, 255, 255, 0.1);
+            --accent-glow: rgba(59, 130, 246, 0.4);
+            --text: #ffffff;
+            --text-dim: #71717a;
+            --onset: #10b981;
+            --grid-line: rgba(255, 255, 255, 0.08);
+            --body-h: 300px;
         }
 
         * {
@@ -39,9 +37,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh;
             padding: 2rem;
-            overflow-x: hidden;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 100%, #111 0%, #050505 100%);
         }
 
         .container {
@@ -49,458 +48,409 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 2rem;
         }
 
         header {
             text-align: center;
-            margin-bottom: 1rem;
         }
 
-        h1 {
-            font-size: 2rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 0.25rem;
+        header h1 {
+            font-size: 1.5rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-weight: 400;
+            color: #fff;
         }
 
-        p.subtitle {
+        header p {
             color: var(--text-dim);
-            font-size: 1rem;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
         }
 
-        /* Drop Zone */
-        .drop-zone {
+        .drop-area {
             background: var(--panel);
-            border: 2px dashed var(--border);
-            border-radius: 0.5rem;
+            border: 1px dashed var(--border);
+            border-radius: 12px;
             padding: 2rem;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
         }
 
-        .drop-zone:hover {
+        .drop-area:hover {
             border-color: var(--accent);
-            background: rgba(59, 130, 246, 0.05);
-            /* Blue tint */
+            background: #0f0f12;
         }
 
-        /* DAW Layout */
+        /* DAW interface */
         #daw-interface {
             display: none;
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 0.5rem;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.8);
+            flex-direction: column;
         }
 
-        /* Top Bar: Transport */
-        .top-bar {
+        .transport {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0.75rem 1rem;
-            background: #121215;
+            padding: 0.75rem 1.5rem;
+            background: #111115;
             border-bottom: 1px solid var(--border);
         }
 
-        .transport-controls {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        button.btn-icon {
-            background: #27272a;
-            color: var(--text);
-            border: none;
+        .btn-transport {
+            background: #222226;
+            color: white;
+            border: 1px solid #333;
             width: 36px;
             height: 36px;
-            border-radius: 4px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: background 0.2s;
-            font-size: 1rem;
+            transition: all 0.1s;
         }
 
-        button.btn-icon:hover {
-            background: #3f3f46;
+        .btn-transport:hover {
+            background: #333339;
+            border-color: #444;
         }
 
-        button.btn-icon.primary {
+        .btn-transport.primary {
             background: var(--accent);
-            color: white;
+            border-color: transparent;
         }
 
-        button.btn-icon.primary:hover {
-            background: var(--accent-dim);
-        }
-
-        .center-display {
+        .lcd {
+            background: #000;
+            padding: 0.4rem 1.25rem;
+            border-radius: 6px;
+            border: 1px solid #222;
             display: flex;
             gap: 2rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .lcd-unit {
+            display: flex;
+            flex-direction: column;
             align-items: center;
         }
 
-        .lcd-panel {
-            background: #000;
-            padding: 0.25rem 0.75rem;
-            border-radius: 4px;
-            border: 1px solid #333;
-            font-family: monospace;
-            color: var(--accent);
+        .lcd-lb {
+            font-size: 0.5rem;
+            color: #555;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .lcd-val {
             font-size: 1.1rem;
-            min-width: 80px;
-            text-align: center;
+            color: var(--accent);
+            font-weight: 700;
         }
 
-        .lcd-label {
-            font-size: 0.6rem;
-            color: #666;
-            margin-right: 0.5rem;
-            text-transform: uppercase;
+        .lcd-val.purple {
+            color: #a855f7;
         }
 
-        .right-controls {
+        .led {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #111;
+            margin-top: 4px;
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.5);
+        }
+
+        .led.active {
+            background: #0ff;
+            box-shadow: 0 0 10px #0ff;
+        }
+
+        /* Work Area */
+        .work-area {
             display: flex;
-            gap: 1.5rem;
-            align-items: center;
+            height: var(--body-h);
+            background: #000;
         }
 
-        .slider-control {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .slider-control label {
-            font-size: 0.6rem;
-            color: var(--text-dim);
-            text-transform: uppercase;
-        }
-
-        input[type="range"] {
-            width: 100px;
-            height: 4px;
-            accent-color: var(--accent);
-        }
-
-        /* DAW Body: Track Layout */
-        .daw-body {
-            display: flex;
-            position: relative;
-        }
-
-        .track-header {
-            width: 200px;
-            background: #18181b;
+        .sidebar {
+            width: 220px;
+            background: #0a0a0c;
             border-right: 1px solid var(--border);
+            padding: 1rem;
+            flex-shrink: 0;
             display: flex;
             flex-direction: column;
-            padding: 0.5rem;
-            justify-content: center;
-            flex-shrink: 0;
+            gap: 0.75rem;
         }
 
-        .track-info {
-            background: #27272a;
-            border-radius: 4px;
-            padding: 0.5rem;
+        .track-card {
+            background: #141417;
+            padding: 0.75rem;
+            border-radius: 6px;
             border-left: 4px solid var(--accent);
         }
 
         .track-name {
+            font-size: 0.75rem;
             font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
+            color: #ddd;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .track-controls {
-            display: flex;
-            gap: 0.25rem;
-        }
-
-        .btn-tiny {
-            font-size: 0.65rem;
-            padding: 2px 6px;
-            background: #3f3f46;
-            color: #ccc;
-            border: none;
-            border-radius: 2px;
-            cursor: default;
-            /* Visual only */
-        }
-
-        .btn-tiny.dull {
-            opacity: 0.5;
-        }
-
-        .timeline-area {
+        .timeline-viewport {
             flex-grow: 1;
             position: relative;
-            background: #09090b;
-            min-height: 180px;
             overflow: hidden;
-            /* WaveSurfer handles scroll */
+            display: flex;
+            flex-direction: column;
         }
 
-        /* WaveSurfer Overrides */
+        #timeline {
+            height: 24px;
+            background: #0a0a0c;
+            border-bottom: 1px solid #1a1a1e;
+        }
+
+        .wave-stack {
+            position: relative;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
         #waveform {
-            height: 100%;
+            height: 100% !important;
             width: 100%;
         }
 
-        /* Regions Styling */
-        .wavesurfer-region {
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            color: white !important;
-            font-size: 10px !important;
-            font-weight: 600 !important;
-            padding: 2px !important;
-            text-transform: uppercase;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        #grid-layer,
+        #marker-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
         }
 
-        /* Grid & Markers as overlay */
+        #marker-layer {
+            z-index: 10;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            border-top: 1px solid var(--border);
+            background: var(--border);
+            gap: 1px;
+        }
+
+        .tile {
+            background: var(--panel);
+            padding: 1.25rem;
+        }
+
+        .tile h3 {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.1em;
+        }
+
+        .stat-l {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .stat-r {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .stat-row label {
+            font-size: 0.6rem;
+            color: #52525b;
+            text-transform: uppercase;
+        }
+
+        .stat-row span {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* HUD Graphics */
         .grid-line {
             position: absolute;
             top: 0;
             bottom: 0;
             width: 1px;
             background: var(--grid-line);
-            pointer-events: none;
-            z-index: 10;
+        }
+
+        .grid-line.strong {
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .marker-tick {
             position: absolute;
             bottom: 0;
             width: 1px;
+            height: 15%;
             background: var(--onset);
-            pointer-events: none;
-            z-index: 20;
+            box-shadow: 0 0 5px var(--onset);
         }
 
-        /* Bottom Stats Panel */
-        .stats-panel {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1px;
-            background: var(--border);
-            /* Borders via gap */
-            margin-top: 1.5rem;
-            border-radius: 0.5rem;
-            overflow: hidden;
-            border: 1px solid var(--border);
-        }
-
-        .stat-col {
-            background: var(--panel);
-            padding: 1.5rem;
-        }
-
-        .stat-col h3 {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            color: var(--text-dim);
-            margin-bottom: 1rem;
-            letter-spacing: 0.05em;
-        }
-
-        .stat-list {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
-        .stat-unit {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .stat-unit label {
-            font-size: 0.7rem;
-            color: #52525b;
-            margin-bottom: 0.2rem;
-            text-transform: uppercase;
-        }
-
-        .stat-unit span {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .text-blue {
-            color: #60a5fa !important;
-        }
-
-        .text-green {
-            color: #4ade80 !important;
-        }
-
-        /* CUE LED */
-        .led {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #333;
-            margin: 0 auto;
-            border: 1px solid #444;
-            transition: all 0.05s;
-        }
-
-        .led.active {
-            background: #06b6d4;
-            box-shadow: 0 0 8px #06b6d4;
-            border-color: white;
-        }
-
-        /* Loading */
-        .spinner {
+        .loader {
             display: none;
-            width: 30px;
-            height: 30px;
-            border: 3px solid #333;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spin {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #111;
             border-top-color: var(--accent);
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 1rem auto;
+            animation: s 0.8s linear infinite;
+            margin: 0 auto 1rem;
         }
 
-        @keyframes spin {
+        @keyframes s {
             to {
                 transform: rotate(360deg);
             }
         }
 
-        #status {
-            text-align: center;
-            color: var(--accent);
-            margin-top: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .waveform-stack {
-            position: relative;
-            height: 160px;
-            /* Match WaveSurfer height */
-            background: #000;
+        input[type="range"] {
+            accent-color: var(--accent);
+            width: 80px;
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-
         <header>
-            <h1>Essentia DAW</h1>
-            <p class="subtitle">Timeline, Grid & AI Classification</p>
+            <h1>Essentia Analysis DAW</h1>
+            <p>Rhythmic Precision & AI Classification</p>
         </header>
 
-        <div id="setup-panel">
-            <div id="drop-zone" class="drop-zone">
-                <p>Drag & Drop Audio File</p>
-                <input type="file" id="file-input" hidden accept="audio/*">
-            </div>
-            <div id="loading" class="spinner"></div>
-            <div id="status"></div>
+        <div id="drop-zone" class="drop-area">
+            <p style="font-size: 0.9rem; color: #888;">Drop WAV/MP3 to start analysis</p>
+            <input type="file" id="file-input" hidden accept="audio/*">
+        </div>
+
+        <div id="loader" class="loader">
+            <div class="spin"></div>
+            <div id="loading-msg" style="color: var(--accent); font-weight: 600;">Analyzing Audio...</div>
         </div>
 
         <div id="daw-interface">
-            <!-- Top Controls -->
-            <div class="top-bar">
-                <div class="transport-controls">
-                    <button id="prev-btn" class="btn-icon" title="Prev Marker">⏮</button>
-                    <button id="play-btn" class="btn-icon primary" title="Play">▶</button>
-                    <button id="next-btn" class="btn-icon" title="Next Marker">⏭</button>
+            <div class="transport">
+                <div style="display: flex; gap: 0.75rem;">
+                    <button id="prev-btn" class="btn-transport">⏮</button>
+                    <button id="play-btn" class="btn-transport primary">▶</button>
+                    <button id="next-btn" class="btn-transport">⏭</button>
                 </div>
 
-                <div class="center-display">
-                    <div>
-                        <span class="lcd-label">BPM</span>
-                        <div class="lcd-panel" id="lcd-bpm">--</div>
+                <div class="lcd">
+                    <div class="lcd-unit">
+                        <span class="lcd-lb">BPM</span>
+                        <div class="lcd-val" id="lcd-bpm">--</div>
                     </div>
-                    <div>
-                        <span class="lcd-label">KEY</span>
-                        <div class="lcd-panel" id="lcd-key" style="color: #c084fc;">--</div>
+                    <div class="lcd-unit">
+                        <span class="lcd-lb">KEY</span>
+                        <div class="lcd-val purple" id="lcd-key">--</div>
                     </div>
-                    <div style="text-align: center;">
-                        <span class="lcd-label">CUE</span>
-                        <div id="cue-led" class="led" style="margin-top: 5px;"></div>
+                    <div class="lcd-unit">
+                        <span class="lcd-lb">CUE</span>
+                        <div id="cue-led" class="led"></div>
                     </div>
                 </div>
 
-                <div class="right-controls">
-                    <div class="slider-control">
-                        <label>Markers</label>
+                <div style="display: flex; gap: 1.5rem;">
+                    <div class="lcd-unit">
+                        <span class="lcd-lb">Markers</span>
                         <input type="range" id="density-slider" min="0" max="100" value="50">
                     </div>
-                    <div class="slider-control">
-                        <label>Zoom</label>
-                        <input type="range" id="zoom-slider" min="10" max="300" value="50">
+                    <div class="lcd-unit">
+                        <span class="lcd-lb">Zoom</span>
+                        <input type="range" id="zoom-slider" min="10" max="400" value="150">
                     </div>
                 </div>
             </div>
 
-            <!-- Main Track Area -->
-            <div class="daw-body">
-                <div class="track-header">
-                    <div class="track-info">
-                        <div class="track-name" id="track-name">Audio Track 1</div>
-                        <div class="track-controls">
-                            <button class="btn-tiny dull">M</button>
-                            <button class="btn-tiny dull">S</button>
-                            <span style="font-size: 0.6rem; color: #666; margin-left: auto;">Vol: 0.0</span>
+            <div class="work-area">
+                <div class="sidebar">
+                    <div class="track-card">
+                        <div class="track-name" id="track-name">Main Channel</div>
+                        <div style="display: flex; gap: 4px; margin-top: 8px;">
+                            <span
+                                style="font-size: 9px; background: #222; padding: 2px 5px; border-radius: 2px; color: #666;">MUTE</span>
+                            <span
+                                style="font-size: 9px; background: #222; padding: 2px 5px; border-radius: 2px; color: #666;">SOLO</span>
                         </div>
                     </div>
                 </div>
+                <div class="timeline-viewport">
+                    <div id="timeline"></div>
+                    <div class="wave-stack">
+                        <div id="grid-layer"></div>
+                        <div id="marker-layer"></div>
+                        <div id="waveform"></div>
+                    </div>
+                </div>
+            </div>
 
-                <div class="timeline-area">
-                    <div id="waveform"></div>
-                    <!-- Grid & Markers injected here -->
+            <div class="dashboard">
+                <div class="tile">
+                    <h3>Timing Stats</h3>
+                    <div class="stat-l">
+                        <div class="stat-row"><label>Onsets</label><span id="stat-onsets">--</span></div>
+                        <div class="stat-row"><label>Duration</label><span id="stat-duration">--</span></div>
+                    </div>
+                </div>
+                <div class="tile">
+                    <h3>Musical Theory</h3>
+                    <div class="stat-l">
+                        <div class="stat-row"><label>Scale</label><span id="stat-scale">--</span></div>
+                        <div class="stat-row"><label>Strength</label><span id="stat-strength">--</span></div>
+                    </div>
+                </div>
+                <div class="tile">
+                    <h3>AI Classification</h3>
+                    <div class="stat-l">
+                        <div class="stat-row"><label>Genre</label><span id="stat-genre"
+                                style="color:var(--onset)">--</span></div>
+                        <div id="stat-tags" style="font-size: 10px; color: #555; margin-top: 4px; line-height: 1.4;">--
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- Detailed Stats (Bottom) -->
-        <div id="stats-panel" class="stats-panel" style="display: none;">
-            <div class="stat-col">
-                <h3>Rhythm & Timing</h3>
-                <div class="stat-list">
-                    <div class="stat-unit"><label>Onsets</label><span id="stat-onsets">--</span></div>
-                    <div class="stat-unit"><label>Duration</label><span id="stat-duration">--</span></div>
-                    <div class="stat-unit"><label>Sections</label><span id="stat-sections">--</span></div>
-                </div>
-            </div>
-            <div class="stat-col">
-                <h3>Tonal Analysis</h3>
-                <div class="stat-list">
-                    <div class="stat-unit"><label>Key</label><span class="text-blue" id="stat-key">--</span></div>
-                    <div class="stat-unit"><label>Scale</label><span id="stat-scale">--</span></div>
-                    <div class="stat-unit"><label>Strength</label><span id="stat-strength">--</span></div>
-                </div>
-            </div>
-            <div class="stat-col">
-                <h3>Classification</h3>
-                <div class="stat-list">
-                    <div class="stat-unit"><label>Genre</label><span class="text-green" id="stat-genre">--</span></div>
-                    <div class="stat-unit"><label>Mood</label><span id="stat-mood">--</span></div>
-                </div>
-                <div style="margin-top: 1rem;"><span id="stat-tags" style="font-size: 0.8rem; color: #666;">--</span>
-                </div>
-            </div>
-        </div>
-
     </div>
 
-    <!-- Scripts -->
     <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
     <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.min.js"></script>
     <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.min.js"></script>
@@ -510,272 +460,173 @@
             ? 'http://localhost:8000'
             : 'https://essentia.v1su4.com';
 
-        // ELs
         const els = {
             dropZone: document.getElementById('drop-zone'),
             fileInput: document.getElementById('file-input'),
-            loading: document.getElementById('loading'),
-            status: document.getElementById('status'),
-            dawInterface: document.getElementById('daw-interface'),
-            statsPanel: document.getElementById('stats-panel'),
+            loader: document.getElementById('loader'),
+            daw: document.getElementById('daw-interface'),
             playBtn: document.getElementById('play-btn'),
-            prevBtn: document.getElementById('prev-btn'),
-            nextBtn: document.getElementById('next-btn'),
             cueLed: document.getElementById('cue-led'),
-            densitySlider: document.getElementById('density-slider'),
-            zoomSlider: document.getElementById('zoom-slider'),
-            trackName: document.getElementById('track-name')
+            gridLayer: document.getElementById('grid-layer'),
+            markerLayer: document.getElementById('marker-layer')
         };
 
-        let ws, wsRegions, wsTimeline;
-        let analysisData = null;
-        let activeMarkers = [];
-        let isPlaying = false;
-        let zoomLevel = 50;
+        let ws, wsRegions, wsTimeline, analysisData, activeMarkers = [], isPlaying = false;
 
-        // Init
-        function initWaveSurfer(url) {
+        function initWS(url) {
             if (ws) ws.destroy();
-
             wsRegions = WaveSurfer.Regions.create();
-            wsTimeline = WaveSurfer.Timeline.create({
-                height: 20,
-                timeInterval: 0.1,
-                primaryLabelInterval: 1,
-                style: { fontSize: '10px', color: '#555' }
-            });
+            wsTimeline = WaveSurfer.Timeline.create({ container: '#timeline', style: { color: '#555', fontSize: '9px' } });
+
+            // Calculate effective height for waveform: work-area height - timeline height
+            const waHeight = 300; // var(--body-h)
+            const tlHeight = 24;
+            const waveH = waHeight - tlHeight;
 
             ws = WaveSurfer.create({
                 container: '#waveform',
-                waveColor: '#3b82f6',     // Vibrant Blue
-                progressColor: '#1e40af', // Darker Blue
-                cursorColor: '#ffffff',
-                height: 'auto',           // Fill container
+                waveColor: '#3b82f6',
+                progressColor: '#1d4ed8',
+                height: waveH,
                 barWidth: 2,
                 barGap: 1,
-                barRadius: 2,
+                cursorColor: '#fff',
                 normalize: true,
-                minPxPerSec: 50,
                 plugins: [wsRegions, wsTimeline]
             });
 
             ws.load(url);
-
             ws.on('ready', () => {
-                els.dawInterface.style.display = 'block';
-                els.statsPanel.style.display = 'grid';
-                els.status.style.display = 'none';
-                ws.zoom(Number(els.zoomSlider.value));
+                els.daw.style.display = 'flex';
+                els.loader.style.display = 'none';
+                ws.zoom(document.getElementById('zoom-slider').value);
             });
-
-            ws.on('zoom', () => {
-                // Re-draw grid on zoom (Debounce technically handling this via frame request would be better)
-                requestAnimationFrame(() => drawGridLOD());
-            });
-
+            ws.on('zoom', () => drawGrid());
             ws.on('play', () => { isPlaying = true; els.playBtn.innerText = '⏸'; loop(); });
             ws.on('pause', () => { isPlaying = false; els.playBtn.innerText = '▶'; });
             ws.on('finish', () => { isPlaying = false; els.playBtn.innerText = '▶'; });
         }
 
-        // Loop for Visuals
         function loop() {
             if (!isPlaying) return;
-            const time = ws.getCurrentTime();
-
-            // LED Logic
-            const hit = activeMarkers.some(t => Math.abs(t - time) < 0.05);
-            if (hit) {
+            const t = ws.getCurrentTime();
+            if (activeMarkers.some(m => Math.abs(m - t) < 0.05)) {
                 els.cueLed.classList.add('active');
                 setTimeout(() => els.cueLed.classList.remove('active'), 80);
             }
             requestAnimationFrame(loop);
         }
 
-        // Controls
-        els.playBtn.onclick = () => ws.playPause();
-        els.zoomSlider.oninput = (e) => {
-            zoomLevel = Number(e.target.value);
-            ws.zoom(zoomLevel);
-        };
-        els.densitySlider.oninput = (e) => {
-            if (analysisData) updateMarkers(e.target.value);
-        };
-        els.nextBtn.onclick = () => seekToMarker(1);
-        els.prevBtn.onclick = () => seekToMarker(-1);
-
-        function seekToMarker(dir) {
-            if (!activeMarkers.length) return;
-            const t = ws.getCurrentTime();
-            // Find closest
-            const target = dir > 0
-                ? activeMarkers.find(mx => mx > t + 0.1)
-                : [...activeMarkers].reverse().find(mx => mx < t - 0.1);
-
-            if (target) ws.seekTo(target / ws.getDuration());
-            else if (dir < 0) ws.seekTo(0);
-        }
-
-        // File
-        els.dropZone.onclick = () => els.fileInput.click();
-        els.fileInput.onchange = (e) => { if (e.target.files.length) loadFile(e.target.files[0]); };
-
-        async function loadFile(file) {
-            els.loading.style.display = 'block';
-            els.status.innerText = 'Uploading & Analyzing...';
-            els.status.style.display = 'block';
-            els.trackName.innerText = file.name;
-
-            const url = URL.createObjectURL(file);
-            initWaveSurfer(url);
-
-            const fd = new FormData();
-            fd.append('file', file);
-
-            try {
-                const res = await fetch(`${API_BASE}/analyze/full`, { method: 'POST', body: fd });
-                if (!res.ok) throw new Error("API Error");
-                analysisData = await res.json();
-                renderData(analysisData);
-                els.status.innerText = "";
-            } catch (e) {
-                console.error(e);
-                els.status.innerText = "Error: " + e.message;
-            } finally {
-                els.loading.style.display = 'none';
-            }
-        }
-
-        function renderData(data) {
-            // LCD
-            document.getElementById('lcd-bpm').innerText = data.bpm ? Math.round(data.bpm) : '--';
-            document.getElementById('lcd-key').innerText = data.tonal?.key || '--';
-
-            // Stats Panel
-            document.getElementById('stat-onsets').innerText = data.onsets?.length || 0;
-            document.getElementById('stat-duration').innerText = Math.round(data.duration) + 's';
-            document.getElementById('stat-sections').innerText = data.structure?.sections?.length || 0;
-
-            document.getElementById('stat-key').innerText = data.tonal?.key || '--';
-            document.getElementById('stat-scale').innerText = data.tonal?.scale || '--';
-            document.getElementById('stat-strength').innerText = Math.round((data.tonal?.strength || 0) * 100) + '%';
-
-            document.getElementById('stat-genre').innerText = data.classification?.genres?.label || 'N/A';
-            document.getElementById('stat-mood').innerText = data.classification?.moods?.label || 'N/A';
-            document.getElementById('stat-tags').innerText = (data.classification?.tags || []).slice(0, 5).join(', ');
-
-            // Regions (Vibrant Blocks)
-            wsRegions.clearRegions();
-            const colorMap = {
-                'intro': 'rgba(239, 68, 68, 0.4)', // Red
-                'verse': 'rgba(59, 130, 246, 0.4)', // Blue
-                'chorus': 'rgba(168, 85, 247, 0.4)', // Purple
-                'outro': 'rgba(107, 114, 128, 0.4)', // Gray
-                'bridge': 'rgba(245, 158, 11, 0.4)'  // Amber
-            };
-
-            if (data.structure?.sections) {
-                data.structure.sections.forEach(s => {
-                    wsRegions.addRegion({
-                        start: s.start, end: s.end,
-                        content: s.label.toUpperCase(),
-                        color: colorMap[s.label] || 'rgba(16, 185, 129, 0.4)', // Default Green
-                        drag: false, resize: false
-                    });
-                });
-            }
-
-            // Init Markers
-            updateMarkers(50);
-
-            // Initial Grid
-            drawGridLOD();
-        }
-
-        // --- GRID LOD LOGIC ---
-        function drawGridLOD() {
+        function drawGrid() {
             if (!analysisData || !analysisData.bpm) return;
+            els.gridLayer.innerHTML = '';
 
-            // Cleanup old lines
-            const container = document.querySelector('#waveform');
-            const old = container.querySelectorAll('.grid-line');
-            old.forEach(el => el.remove());
-
-            // Calculate pxPerBeat based on ZOOM
-            // WaveSurfer pixel ratio depends on container width vs duration
-            // We can get pxPerSec from WS wrapper or approximate.
-            // Better: use WS internal wrapper width.
-            const wrapper = container.querySelector('div'); // WS container
+            const wrapper = document.querySelector('#waveform > div');
             if (!wrapper) return;
+            const sw = wrapper.scrollWidth;
+            els.gridLayer.style.width = sw + 'px';
+            els.markerLayer.style.width = sw + 'px';
 
-            const pxPerSec = wrapper.scrollWidth / analysisData.duration;
-            const singleBeatDuration = 60 / analysisData.bpm;
-            const pxPerBeat = pxPerSec * singleBeatDuration;
+            const pps = sw / analysisData.duration;
+            const bd = 60 / analysisData.bpm;
+            const ppb = pps * bd;
 
-            // Determine subdivision
-            // We want nice spacing, e.g. at least 15px between lines.
-            // 4/4 assumed.
-            let div = 1; // Quarter notes
-            if (pxPerBeat > 30) div = 2;   // 8th
-            if (pxPerBeat > 60) div = 4;   // 16th
-            if (pxPerBeat > 120) div = 8;  // 32nd
-            if (pxPerBeat < 10) div = 0.25; // Bars (1/1)
+            let div = 1;
+            if (ppb > 30) div = 2;
+            if (ppb > 60) div = 4;
+            if (ppb > 120) div = 8;
+            if (ppb < 10) div = 0.25;
 
-            const interval = singleBeatDuration / div;
-
-            // Fragment for perf
+            const interval = bd / div;
             const frag = document.createDocumentFragment();
             for (let t = 0; t < analysisData.duration; t += interval) {
                 const l = document.createElement('div');
                 l.className = 'grid-line';
                 l.style.left = (t / analysisData.duration * 100) + '%';
-
-                // Styling based on beat strength using modulo
-                // Use tiny epsilon for float comparison
-                const beatPos = t % (singleBeatDuration * 4); // Position in Bar (4 beats)
-
-                // Bar line (Strongest)
-                if (Math.abs(t % (singleBeatDuration * 4)) < 0.01) {
-                    l.style.background = 'rgba(255,255,255,0.3)';
-                }
-                // Beat line
-                else if (Math.abs(t % singleBeatDuration) < 0.01) {
-                    l.style.background = 'rgba(255,255,255,0.15)';
-                }
-                // Sub-beat
-                else {
-                    l.style.background = 'rgba(255,255,255,0.05)';
-                }
-
+                if (Math.abs(t % (bd * 4)) < 0.01) l.classList.add('strong');
                 frag.appendChild(l);
             }
-            container.appendChild(frag);
+            els.gridLayer.appendChild(frag);
         }
 
-        function updateMarkers(density) {
-            const container = document.querySelector('#waveform');
-            container.querySelectorAll('.marker-tick').forEach(e => e.remove());
-
+        function updateMarkers(den) {
+            els.markerLayer.innerHTML = '';
             if (!analysisData) return;
-
-            letToShow = [];
-            if (density > 0) {
-                const step = Math.max(1, Math.round(100 / density));
-                letToShow = analysisData.onsets.filter((_, i) => i % step === 0);
-            }
-            activeMarkers = letToShow;
-
+            const step = Math.max(1, Math.round(100 / den));
+            activeMarkers = analysisData.onsets.filter((_, i) => i % step === 0);
             const frag = document.createDocumentFragment();
-            letToShow.forEach(t => {
-                const el = document.createElement('div');
-                el.className = 'marker-tick';
-                el.style.left = (t / analysisData.duration * 100) + '%';
-                el.style.height = '15%';
-                frag.appendChild(el);
+            activeMarkers.forEach(m => {
+                const t = document.createElement('div');
+                t.className = 'marker-tick';
+                t.style.left = (m / analysisData.duration * 100) + '%';
+                frag.appendChild(t);
             });
-            container.appendChild(frag);
+            els.markerLayer.appendChild(frag);
         }
 
+        els.dropZone.onclick = () => els.fileInput.click();
+        els.fileInput.onchange = (e) => { if (e.target.files[0]) analyze(e.target.files[0]); };
+
+        async function analyze(file) {
+            els.dropZone.style.display = 'none';
+            els.loader.style.display = 'block';
+            document.getElementById('track-name').innerText = file.name;
+            initWS(URL.createObjectURL(file));
+
+            const fd = new FormData(); fd.append('file', file);
+            try {
+                const res = await fetch(`${API_BASE}/analyze/full`, { method: 'POST', body: fd });
+                analysisData = await res.json();
+                render(analysisData);
+            } catch (e) {
+                document.getElementById('loading-msg').innerText = "Error: " + e.message;
+            }
+        }
+
+        function render(d) {
+            document.getElementById('lcd-bpm').innerText = Math.round(d.bpm);
+            document.getElementById('lcd-key').innerText = d.tonal?.key || '--';
+            document.getElementById('stat-onsets').innerText = d.onsets.length;
+            document.getElementById('stat-duration').innerText = Math.round(d.duration) + 's';
+            document.getElementById('stat-scale').innerText = d.tonal?.scale || '--';
+            document.getElementById('stat-strength').innerText = Math.round((d.tonal?.strength || 0) * 100) + '%';
+            document.getElementById('stat-genre').innerText = d.classification.genres.label;
+            document.getElementById('stat-tags').innerText = d.classification.tags.slice(0, 10).join(' • ');
+
+            wsRegions.clearRegions();
+            const colors = {
+                intro: 'rgba(239, 68, 68, 0.3)', // Red
+                verse: 'rgba(59, 130, 246, 0.3)', // Blue
+                chorus: 'rgba(168, 85, 247, 0.3)', // Purple
+                outro: 'rgba(113, 113, 122, 0.3)' // Zinc
+            };
+            d.structure.sections.forEach(s => {
+                wsRegions.addRegion({
+                    start: s.start,
+                    end: s.end,
+                    content: s.label.toUpperCase(),
+                    color: colors[s.label] || 'rgba(16, 185, 129, 0.3)',
+                    drag: false,
+                    resize: false
+                });
+            });
+            updateMarkers(document.getElementById('density-slider').value);
+            drawGrid();
+        }
+
+        els.playBtn.onclick = () => ws.playPause();
+        document.getElementById('zoom-slider').oninput = (e) => ws.zoom(e.target.value);
+        document.getElementById('density-slider').oninput = (e) => updateMarkers(e.target.value);
+        document.getElementById('prev-btn').onclick = () => {
+            const t = ws.getCurrentTime();
+            const hit = [...activeMarkers].reverse().find(m => m < t - 0.2);
+            ws.seekTo((hit || 0) / ws.getDuration());
+        };
+        document.getElementById('next-btn').onclick = () => {
+            const t = ws.getCurrentTime();
+            const hit = activeMarkers.find(m => m > t + 0.2);
+            if (hit) ws.seekTo(hit / ws.getDuration());
+        };
     </script>
 </body>
 

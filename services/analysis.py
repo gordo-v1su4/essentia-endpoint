@@ -123,33 +123,54 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
     # Let's use it to group similar segments.
     
     sections = []
-    # If we have enough segments, try to cluster them
-    if len(boundaries) > 3:
-        # Simplification: we'll assign labels based on energy and position for now
-        # until we verify SegmentClustering parameters for the current Essentia version.
-        # But we'll structure it so it's ready for clustering logic.
+    if len(boundaries) > 2:
+        # 1. Calculate features for each segment
+        segment_data = []
         for i in range(len(boundaries) - 1):
             start = boundaries[i]
             end = boundaries[i+1]
+            start_s = int(start * sample_rate)
+            end_s = int(end * sample_rate)
+            chunk = audio[start_s:end_s]
             
-            # Simple heuristic labels
-            pos = ((start + end) / 2) / duration
-            label = "section"
-            if pos < 0.1: label = "intro"
-            elif pos > 0.9: label = "outro"
+            if len(chunk) > 0:
+                energy = float(np.mean(chunk**2))
             else:
-                # Segment energy check
-                start_s = int(start * sample_rate)
-                end_s = int(end * sample_rate)
-                chunk = audio[start_s:end_s]
-                energy = np.mean(chunk**2) if len(chunk) > 0 else 0
-                label = "chorus" if energy > 0.04 else "verse"
+                energy = 0.0
                 
-            sections.append({
+            segment_data.append({
                 "start": float(start),
                 "end": float(end),
+                "energy": energy,
+                "pos": ((start + end) / 2) / duration
+            })
+
+        # 2. Heuristic Labeling
+        # Identify Intro/Outro first
+        # Compare energies to label Verse/Chorus
+        # Note: This is an improved heuristic until a full classifier is integrated.
+        
+        avg_energy = np.mean([s["energy"] for s in segment_data]) if segment_data else 0
+        
+        for i, s in enumerate(segment_data):
+            label = "section"
+            
+            if s["pos"] < 0.15 and i == 0:
+                label = "intro"
+            elif s["pos"] > 0.85 and i == len(segment_data) - 1:
+                label = "outro"
+            else:
+                # Use relative energy for Verse vs Chorus
+                if s["energy"] > avg_energy * 1.1:
+                    label = "chorus"
+                else:
+                    label = "verse"
+            
+            sections.append({
+                "start": s["start"],
+                "end": s["end"],
                 "label": label,
-                "duration": float(end - start)
+                "duration": float(s["end"] - s["start"])
             })
     else:
         # Fallback for short audio
