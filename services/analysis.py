@@ -79,12 +79,41 @@ def analyze_rhythm_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[st
     onsets = get_high_quality_onsets(audio, sample_rate)
     duration = float(len(audio) / sample_rate)
     
+    # High-resolution Energy Curve for Speed Ramping
+    # Hop size 512 at 44.1kHz is ~11.6ms (approx 86Hz), good for ~60fps video
+    frame_size = 1024
+    hop_size = 512
+    rms_frames = es.FrameGenerator(audio, frameSize=frame_size, hopSize=hop_size)
+    rms = es.RMS()
+    rms_curve = []
+    
+    for frame in rms_frames:
+        rms_val = rms(frame)
+        rms_curve.append(float(rms_val))
+    
+    # Normalize curve to 0-1 for easier mapping
+    if rms_curve:
+        max_rms = max(rms_curve)
+        if max_rms > 0:
+            rms_curve = [val / max_rms for val in rms_curve]
+    
+    # Calculate overall energy statistics
+    energy_analyzer = es.Energy()
+    energy = energy_analyzer(audio)
+    energy_mean = float(np.mean(energy) if hasattr(energy, '__len__') else energy)
+    energy_std = float(np.std(energy) if hasattr(energy, '__len__') and len(energy) > 1 else 0.0)
+    
     return {
         "bpm": float(bpm),
         "beats": [float(b) for b in beats],
         "confidence": float(beats_confidence),
         "onsets": onsets,
-        "duration": duration
+        "duration": duration,
+        "energy": {
+            "mean": energy_mean,
+            "std": energy_std,
+            "curve": rms_curve
+        }
     }
 
 def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
@@ -170,7 +199,8 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
                 "start": s["start"],
                 "end": s["end"],
                 "label": label,
-                "duration": float(s["end"] - s["start"])
+                "duration": float(s["end"] - s["start"]),
+                "energy": s["energy"]
             })
     else:
         # Fallback for short audio
@@ -178,7 +208,8 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
             "start": 0.0,
             "end": duration,
             "label": "full",
-            "duration": duration
+            "duration": duration,
+            "energy": 0.0
         })
         
     return {

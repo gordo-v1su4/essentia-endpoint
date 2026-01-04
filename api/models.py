@@ -6,6 +6,12 @@ class Section(BaseModel):
     end: float
     label: str
     duration: float
+    energy: float
+
+class EnergyData(BaseModel):
+    mean: float
+    std: float
+    curve: List[float]
 
 class RhythmAnalysis(BaseModel):
     bpm: float
@@ -13,6 +19,7 @@ class RhythmAnalysis(BaseModel):
     confidence: float
     onsets: List[float]
     duration: float
+    energy: EnergyData
 
 class StructureAnalysis(BaseModel):
     sections: List[Section]
