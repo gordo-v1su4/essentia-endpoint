@@ -1,6 +1,16 @@
 # Essentia Audio Analysis API
 
-FastAPI server for audio beat detection and BPM extraction using Essentia.
+FastAPI server for comprehensive audio analysis using Essentia. Provides rhythm analysis, structural segmentation, classification (genre/mood/tags), and tonal analysis.
+
+## Documentation
+
+Additional documentation is available in the [`docs/`](docs/) folder:
+- [Energy Curve Updates](docs/ENERGY_CURVE_UPDATE.md) - Speed ramping and energy-based features
+- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment instructions
+- [Coolify Setup](docs/COOLIFY.md) - Coolify-specific configuration
+- [Models Setup](docs/MODELS_SETUP.md) - TensorFlow models configuration
+- [CORS Configuration](docs/CORS_FIX.md) - CORS troubleshooting
+- [OpenAPI Schema](docs/openapi.json) - API specification
 
 ## Quick Start
 
@@ -59,34 +69,82 @@ docker-compose down
 | `API_PORT` | `8000` | Port to run the server on |
 | `CORS_ORIGINS` | `*` | Comma-separated list of allowed CORS origins |
 
-## API Endpoints
+## API Documentation
 
-### `POST /analyze`
+### Interactive Documentation
 
-Analyzes an audio file for beats and BPM.
+- **Swagger UI**: https://essentia.v1su4.com/docs (or `http://localhost:8000/docs` for local)
+- **ReDoc**: https://essentia.v1su4.com/redoc (or `http://localhost:8000/redoc` for local)
 
-**Request:**
-- Content-Type: `multipart/form-data`
-- Body: `file` (audio file)
+### API Endpoints
+
+#### `POST /analyze/rhythm`
+
+Extract BPM, beats, confidence, onsets, and high-resolution energy curve.
 
 **Response:**
 ```json
 {
   "bpm": 120.5,
-  "beats": [0.0, 0.5, 1.0, 1.5, ...],
+  "beats": [0.0, 0.5, 1.0, ...],
   "confidence": 0.95,
-  "duration": 180.5
+  "onsets": [0.1, 0.3, 0.6, ...],
+  "duration": 180.5,
+  "energy": {
+    "mean": 0.45,
+    "std": 0.12,
+    "curve": [0.0, 0.1, 0.3, 0.5, ...]
+  }
 }
 ```
 
-### `GET /health`
+#### `POST /analyze/structure`
+
+Segment audio into sections (intro, verse, chorus, etc.) with energy values.
+
+**Response:**
+```json
+{
+  "sections": [
+    {
+      "start": 0.0,
+      "end": 15.2,
+      "label": "intro",
+      "duration": 15.2,
+      "energy": 0.12
+    }
+  ]
+}
+```
+
+#### `POST /analyze/classification`
+
+Analyze genre, mood, and tags using Essentia TensorFlow models.
+
+**Response:**
+```json
+{
+  "genre": {"electronic": 0.8, "rock": 0.15, ...},
+  "mood": {"energetic": 0.9, "happy": 0.7, ...},
+  "tags": {"instrumental": 0.95, "dance": 0.8, ...}
+}
+```
+
+#### `POST /analyze/full`
+
+Perform complete analysis (rhythm, structure, classification, and tonal).
+
+**Response:** Combined data from all analysis types.
+
+#### `GET /health`
 
 Health check endpoint.
 
 **Response:**
 ```json
 {
-  "status": "ok"
+  "status": "ok",
+  "version": "2.0.0"
 }
 ```
 
