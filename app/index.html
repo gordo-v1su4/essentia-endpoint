@@ -272,11 +272,14 @@
         </div>
     </div>
 
-    <!-- Wavesurfer.js -->
+    <!-- WaveSurfer.js + Regions Plugin -->
     <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.min.js"></script>
     <script>
-        // Update this to your production URL or localhost:7000 for local testing
-        const API_BASE = 'https://essentia.v1su4.com';
+        // Use relative path for production, or specific localhost for dev
+        const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+            ? 'http://localhost:8000'
+            : 'https://essentia.v1su4.com';
 
         const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file-input');
@@ -288,9 +291,13 @@
         const segmentTrack = document.getElementById('segment-track');
 
         let ws;
+        let wsRegions;
 
         function initWaveSurfer(url) {
             if (ws) ws.destroy();
+
+            // Create Regions Plugin
+            wsRegions = WaveSurfer.Regions.create();
 
             ws = WaveSurfer.create({
                 container: '#waveform',
@@ -298,18 +305,20 @@
                 progressColor: '#8b5cf6',
                 cursorColor: '#fff',
                 barWidth: 2,
-                barRadius: 3,
-                responsive: true,
+                barGap: 1,
+                barRadius: 2,
                 height: 128,
+                plugins: [wsRegions],
             });
 
             ws.load(url);
 
             ws.on('ready', () => {
                 waveformContainer.style.display = 'block';
-                status.innerText = 'Audio Ready';
+                status.style.display = 'none';
             });
 
+            ws.on('interaction', () => ws.play());
             playBtn.onclick = () => ws.playPause();
         }
 
@@ -333,17 +342,20 @@
         };
 
         async function handleFile(file) {
-            status.innerText = 'Analyzing...';
+            status.style.display = 'block';
+            status.innerText = 'Uploading & Analyzing (this may take a moment)...';
             loading.style.display = 'block';
             waveformContainer.style.display = 'none';
             stats.style.display = 'none';
-            segmentTrack.innerHTML = '';
 
-            const url = URL.createObjectURL(file);
-            initWaveSurfer(url);
-
+            // Reset existing UI
+            if (ws) ws.destroy();
             const existingMarkers = document.querySelectorAll('.marker');
             existingMarkers.forEach(m => m.remove());
+
+            // Prepare Audio URL immediatley for visual
+            const url = URL.createObjectURL(file);
+            initWaveSurfer(url);
 
             const formData = new FormData();
             formData.append('file', file);
@@ -354,14 +366,15 @@
                     body: formData
                 });
 
-                if (!response.ok) throw new Error('Analysis failed');
+                if (!response.ok) throw new Error(`Server Error: ${response.statusText}`);
 
                 const data = await response.json();
                 displayResults(data);
-                status.innerText = 'Analysis Complete';
+                status.innerText = 'Analysis Complete!';
             } catch (err) {
                 console.error(err);
-                status.innerText = 'Error: ' + err.message;
+                status.classList.add('error');
+                status.innerText = `Error: ${err.message}. (Check console/CORS)`;
             } finally {
                 loading.style.display = 'none';
             }
@@ -369,31 +382,108 @@
 
         function displayResults(data) {
             stats.style.display = 'grid';
+
+            // 1. Basic Stats
             document.getElementById('stat-bpm').innerText = Math.round(data.bpm);
             document.getElementById('stat-onsets').innerText = data.onsets.length;
             document.getElementById('stat-sections').innerText = data.structure.sections.length;
             document.getElementById('stat-duration').innerText = Math.round(data.duration) + 's';
 
+            // 2. Classification Stats (New)
+            if (data.classification) {
+                // Ensure elements exist or add them dynamically if you prefer (updating HTML structure in next step)
+                // For now, let's log them to console or update if elements existed.
+                // We will add the HTML elements in a separate edit step or assume they are there.
+                console.log("Classification:", data.classification);
+
+                // Add classification row if missing
+                let classRow = document.getElementById('classification-stats');
+                if (!classRow) {
+                    classRow = document.createElement('div');
+                    classRow.id = 'classification-stats';
+                    classRow.className = 'stats'; // Reuse grid style
+                    classRow.style.marginTop = '1rem';
+
+                    classRow.innerHTML = `
+                        <div class="stat-card">
+                            <div class="stat-label">Genre</div>
+                            <div id="stat-genre" class="stat-value" style="font-size: 1rem;">--</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Mood</div>
+                            <div id="stat-mood" class="stat-value" style="font-size: 1rem;">--</div>
+                        </div>
+                        <div class="stat-card" style="grid-column: span 2;">
+                            <div class="stat-label">Top Tags</div>
+                            <div id="stat-tags" class="stat-value" style="font-size: 0.9rem; line-height: 1.4;">--</div>
+                        </div>
+                    `;
+                    stats.parentNode.insertBefore(classRow, stats.nextSibling);
+                }
+
+                document.getElementById('stat-genre').innerText = data.classification.genres.label;
+                document.getElementById('stat-mood').innerText = data.classification.moods.label;
+                document.getElementById('stat-tags').innerText = data.classification.tags.slice(0, 5).join(', ');
+            }
+
+            // 3. Tonal Stats (New)
+            if (data.tonal) {
+                let keyRow = document.getElementById('tonal-stats');
+                if (!keyRow) {
+                    keyRow = document.createElement('div');
+                    keyRow.id = 'tonal-stats';
+                    keyRow.className = 'stats';
+                    keyRow.style.marginTop = '1rem';
+                    keyRow.innerHTML = `
+                         <div class="stat-card">
+                            <div class="stat-label">Key</div>
+                            <div id="stat-key" class="stat-value">--</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Scale</div>
+                            <div id="stat-scale" class="stat-value" style="font-size: 1rem; text-transform: uppercase;">--</div>
+                        </div>
+                         <div class="stat-card">
+                            <div class="stat-label">Strength</div>
+                            <div id="stat-key-strength" class="stat-value">--</div>
+                        </div>
+                    `;
+                    stats.parentNode.insertBefore(keyRow, stats.nextSibling);
+                }
+                document.getElementById('stat-key').innerText = data.tonal.key;
+                document.getElementById('stat-scale').innerText = data.tonal.scale;
+                document.getElementById('stat-key-strength').innerText = Math.round(data.tonal.strength * 100) + '%';
+            }
+
+            // 3. Sections (using Regions Plugin)
+            wsRegions.clearRegions();
             const colors = {
-                'intro': '#3b82f6',
-                'outro': '#6b7280',
-                'chorus': '#ec4899',
-                'verse': '#8b5cf6',
-                'section': '#10b981'
+                'intro': 'rgba(59, 130, 246, 0.2)', // Blue
+                'outro': 'rgba(107, 114, 128, 0.2)', // Gray
+                'chorus': 'rgba(236, 72, 153, 0.3)', // Pink
+                'verse': 'rgba(139, 92, 246, 0.2)', // Purple
+                'section': 'rgba(16, 185, 129, 0.2)' // Green
             };
 
             data.structure.sections.forEach(seg => {
-                const div = document.createElement('div');
-                div.className = 'segment';
-                div.style.width = (seg.duration / data.duration * 100) + '%';
-                div.style.backgroundColor = colors[seg.label] || '#4b5563';
-                div.innerText = seg.label;
-                div.title = `${seg.label}: ${seg.start.toFixed(2)} - ${seg.end.toFixed(2)}`;
-                segmentTrack.appendChild(div);
+                wsRegions.addRegion({
+                    start: seg.start,
+                    end: seg.end,
+                    color: colors[seg.label] || colors['section'],
+                    drag: false,
+                    resize: false,
+                    content: seg.label.toUpperCase()
+                });
             });
 
+            // 4. Onsets (Markers)
+            // Limit onsets to avoid UI lag if > 500
+            const onsetsToShow = data.onsets.length > 500 ?
+                data.onsets.filter((_, i) => i % Math.ceil(data.onsets.length / 500) === 0) :
+                data.onsets;
+
             const waveElem = document.getElementById('waveform');
-            data.onsets.forEach(time => {
+            onsetsToShow.forEach(time => {
                 const marker = document.createElement('div');
                 marker.className = 'marker';
                 marker.style.left = (time / data.duration * 100) + '%';

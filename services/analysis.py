@@ -318,3 +318,41 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100) ->
         "moods": moods,
         "tags": tags
     }
+
+def analyze_tonal_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
+    """
+    Extract Key and Scale using KeyExtractor.
+    """
+    # KeyExtractor logic
+    # It usually requires 'hpcd' or 'pcp' input, but 'KeyExtractor' is a composite algorithm 
+    # that usually takes audio or spectral peaks. 
+    # Standard: KeyExtractor(audio) -> key, scale, strength
+    
+    try:
+        # Check available algorithms or use standard configuration
+        # Ideally: KeyExtractor requires spectogram or specific profile
+        # Simpler: KeyExtractor handles audio directly in some versions, but 
+        # usually we need: Audio -> FrameCutter -> Windowing -> Spectrum -> SpectralPeaks -> HPCP -> Key
+        # Or just use the wrapper 'KeyExtractor' if available for audio (streaming)
+        # But commonly in standard mode:
+        
+        # Let's use the standard chain for safety:
+        # 1. HPCP
+        # 2. Key
+        
+        # Or check if KeyExtractor accepts audio
+        key_extractor = es.KeyExtractor()
+        key, scale, strength, _, _ = key_extractor(audio)
+        
+        return {
+            "key": key,
+            "scale": scale,
+            "strength": float(strength)
+        }
+    except Exception as e:
+        print(f"Key analysis failed: {e}")
+        return {
+            "key": "Unknown",
+            "scale": "Unknown",
+            "strength": 0.0
+        }

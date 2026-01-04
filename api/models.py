@@ -28,6 +28,12 @@ class ClassificationAnalysis(BaseModel):
     moods: ClassificationResult
     tags: List[str]
 
+class TonalAnalysis(BaseModel):
+    key: str
+    scale: str
+    strength: float
+
 class FullAnalysis(RhythmAnalysis):
     structure: StructureAnalysis
     classification: Optional[ClassificationAnalysis] = None
+    tonal: Optional[TonalAnalysis] = None

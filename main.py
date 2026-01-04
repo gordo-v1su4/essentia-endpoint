@@ -11,12 +11,14 @@ import os
 import uvicorn
 
 # Internal imports
-from api.models import RhythmAnalysis, StructureAnalysis, FullAnalysis, ClassificationAnalysis
+# Internal imports
+from api.models import RhythmAnalysis, StructureAnalysis, TonalAnalysis, FullAnalysis, ClassificationAnalysis
 from services.analysis import (
     load_audio, 
     analyze_rhythm_logic, 
     analyze_structure_logic,
-    analyze_classification_logic
+    analyze_classification_logic,
+    analyze_tonal_logic
 )
 
 # Configuration
@@ -106,11 +108,13 @@ async def analyze_full(file: UploadFile = File(...)):
         rhythm = analyze_rhythm_logic(audio)
         structure = analyze_structure_logic(audio)
         classification = analyze_classification_logic(audio)
+        tonal = analyze_tonal_logic(audio)
         
         return {
             **rhythm,
             "structure": structure,
-            "classification": classification
+            "classification": classification,
+            "tonal": tonal
         }
     finally:
         if os.path.exists(tmp_path): 
