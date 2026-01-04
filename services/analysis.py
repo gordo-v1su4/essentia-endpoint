@@ -49,11 +49,12 @@ def get_high_quality_onsets(audio: np.ndarray, sample_rate: int = 44100) -> List
     complex_array = np.array(complex_values, dtype=np.float32)
     
     # Weights must be same size as input
-    weights_hfc = np.ones(len(hfc_values), dtype=np.float32)
-    weights_complex = np.ones(len(complex_values), dtype=np.float32)
+    # weights_hfc = np.ones(len(hfc_values), dtype=np.float32)
+    # weights_complex = np.ones(len(complex_values), dtype=np.float32)
     
-    onsets_hfc = onsets_alg(hfc_array, weights_hfc)
-    onsets_complex = onsets_alg(complex_array, weights_complex)
+    # Onsets algorithm doesn't strictly need weights if they are all 1.0
+    onsets_hfc = onsets_alg(hfc_array)
+    onsets_complex = onsets_alg(complex_array)
     
     # Convert from algorithm internal time to absolute time
     # Onsets returns seconds, but check if we need to scale based on hop size if it fails.
