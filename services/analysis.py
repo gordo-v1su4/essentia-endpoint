@@ -109,7 +109,7 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
     # We use a windowed approach if audio is long, but for standard tracks SBic(size=...) is fine.
     # Note: minLength is in frames. 1024 hop @ 44.1k is ~23ms. 100 frames ~2.3s.
     sbic = es.SBic(minLength=100) 
-    boundaries_frames = sbic(es.array(mfccs))
+    boundaries_frames = sbic(np.array(mfccs, dtype=np.float32))
     
     # Convert boundary frames to seconds
     # SBic returns frame indices relative to the input array.
