@@ -45,8 +45,8 @@ def get_high_quality_onsets(audio: np.ndarray, sample_rate: int = 44100) -> List
     
     # Peak picking
     # Ensure inputs are float32 arrays
-    hfc_array = es.array(hfc_values).astype(np.float32)
-    complex_array = es.array(complex_values).astype(np.float32)
+    hfc_array = np.array(hfc_values, dtype=np.float32)
+    complex_array = np.array(complex_values, dtype=np.float32)
     
     # Weights must be same size as input
     weights_hfc = np.ones(len(hfc_values), dtype=np.float32)
