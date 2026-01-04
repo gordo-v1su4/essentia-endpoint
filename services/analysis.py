@@ -20,23 +20,28 @@ def get_high_quality_onsets(audio: np.ndarray, sample_rate: int = 44100) -> List
     hop_size = 512
     
     w = es.Windowing(type='hann')
-    spec = es.Spectrum()
+    # FFT and CartesianToPolar to get both magnitude and phase
+    fft = es.FFT()
+    c2p = es.CartesianToPolar()
     
     # Define detection functions
+    # HFC only needs magnitude, but Complex needs both magnitude and phase
     od_hfc = es.OnsetDetection(method='hfc')
     od_complex = es.OnsetDetection(method='complex')
     
     # Onsets algorithm: returns onset times in seconds
-    # Note: sensitive parameters are alpha and delay
     onsets_alg = es.Onsets()
     
     hfc_values = []
     complex_values = []
     
     for frame in es.FrameGenerator(audio, frameSize=frame_size, hopSize=hop_size):
-        frame_spec = spec(w(frame))
-        hfc_values.append(od_hfc(frame_spec, frame))
-        complex_values.append(od_complex(frame_spec, frame))
+        windowed = w(frame)
+        fft_out = fft(windowed)
+        mag, phase = c2p(fft_out)
+        
+        hfc_values.append(od_hfc(mag, phase))
+        complex_values.append(od_complex(mag, phase))
     
     # Peak picking
     # Weights are optional, passing None is safest if we don't need them

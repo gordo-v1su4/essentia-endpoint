@@ -10,6 +10,8 @@ ENV/
 
 # Essentia Models
 api/models/
+models/
+temp_models/
 
 # OS
 .DS_Store

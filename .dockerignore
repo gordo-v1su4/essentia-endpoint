@@ -10,6 +10,7 @@ app/
 __pycache__/
 .venv/
 models/
+temp_models/
 
 # OS
 .DS_Store
