@@ -21,8 +21,9 @@ from services.analysis import (
 # Configuration
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
-CORS_ORIGINS_STR = os.getenv("CORS_ORIGINS", "https://v1su4.com,http://localhost:5173,http://localhost:3000")
-CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS_STR.split(",")]
+# Default to '*' for easiest testing, user can override in Coolify
+CORS_ORIGINS_STR = os.getenv("CORS_ORIGINS", "*")
+CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS_STR.split(",") if origin.strip()]
 
 app = FastAPI(
     title="Audio Analysis API", 
@@ -31,14 +32,24 @@ app = FastAPI(
 )
 
 # CORS configuration
-use_wildcard = "*" in CORS_ORIGINS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_credentials=not use_wildcard,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+if "*" in CORS_ORIGINS:
+    # When using wildcard, we must set allow_credentials=False
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    # Specific origins allow credentials
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 @app.post("/analyze/rhythm", response_model=RhythmAnalysis, tags=["Analysis"])
 async def analyze_rhythm(file: UploadFile = File(...)):
