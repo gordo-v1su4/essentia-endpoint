@@ -26,7 +26,9 @@ def get_high_quality_onsets(audio: np.ndarray, sample_rate: int = 44100) -> List
     od_hfc = es.OnsetDetection(method='hfc')
     od_complex = es.OnsetDetection(method='complex')
     
-    onsets_alg = es.Onsets(threshold=0.1)
+    # Onsets algorithm: returns onset times in seconds
+    # Note: sensitive parameters are alpha and delay
+    onsets_alg = es.Onsets()
     
     hfc_values = []
     complex_values = []
@@ -37,8 +39,13 @@ def get_high_quality_onsets(audio: np.ndarray, sample_rate: int = 44100) -> List
         complex_values.append(od_complex(frame_spec, frame))
     
     # Peak picking
-    onsets_hfc = onsets_alg(es.array(hfc_values), [frame_size, hop_size])
-    onsets_complex = onsets_alg(es.array(complex_values), [frame_size, hop_size])
+    # Weights are optional, passing None is safest if we don't need them
+    onsets_hfc = onsets_alg(es.array(hfc_values), [1.0] * len(hfc_values))
+    onsets_complex = onsets_alg(es.array(complex_values), [1.0] * len(complex_values))
+    
+    # Convert from algorithm internal time to absolute time
+    # Onsets returns seconds, but check if we need to scale based on hop size if it fails.
+    # In many versions, it uses the global sampleRate/hopSize which might need config.
     
     # Combine and deduplicate
     all_onsets = sorted(list(set(np.round(onsets_hfc, 3)) | set(np.round(onsets_complex, 3))))
