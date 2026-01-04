@@ -32,25 +32,18 @@ app = FastAPI(
     description="High-quality music analysis using Essentia C++ core via Python."
 )
 
-# CORS configuration
-if "*" in CORS_ORIGINS:
-    # When using wildcard, we must set allow_credentials=False
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=False,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-else:
-    # Specific origins allow credentials
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=CORS_ORIGINS,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+# CORS Configuration
+# Simplified for maximum compatibility during testing
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True, # Note: This might be ignored by browsers if origin is *
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# Note: For file:// access (origin 'null'), effective testing often requires 
+# starting a local server (python -m http.server) rather than file:// directly.
+
 
 @app.post("/analyze/rhythm", response_model=RhythmAnalysis, tags=["Analysis"])
 async def analyze_rhythm(file: UploadFile = File(...)):
