@@ -143,24 +143,50 @@
 
         .stat-card {
             background: var(--panel);
-            padding: 1rem;
+            padding: 1.25rem 0.75rem;
             border-radius: 0.75rem;
             border: 1px solid var(--border);
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 100px;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: var(--accent);
         }
 
         .stat-label {
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: var(--text-dim);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.25rem;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
         }
 
         .stat-value {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 600;
             color: var(--accent);
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.2;
+        }
+
+        .section-header {
+            width: 100%;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+            text-align: left;
         }
 
         #status {
@@ -168,7 +194,15 @@
             font-size: 0.9rem;
             color: var(--accent);
             margin-top: 1rem;
-            height: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            background: rgba(139, 92, 246, 0.1);
+            display: none;
+        }
+
+        #status.error {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
         }
 
         .marker {
@@ -252,22 +286,57 @@
             </div>
         </div>
 
-        <div id="stats" class="stats" style="display: none;">
-            <div class="stat-card">
-                <div class="stat-label">BPM</div>
-                <div id="stat-bpm" class="stat-value">--</div>
+        <div id="stats" style="display: none; width: 100%;">
+            <div class="section-header">Rhythm & Structure</div>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-label">BPM</div>
+                    <div id="stat-bpm" class="stat-value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Onsets</div>
+                    <div id="stat-onsets" class="stat-value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Sections</div>
+                    <div id="stat-sections" class="stat-value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Duration</div>
+                    <div id="stat-duration" class="stat-value">--s</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Onsets</div>
-                <div id="stat-onsets" class="stat-value">--</div>
+
+            <div class="section-header">Tonal Information</div>
+            <div id="tonal-stats" class="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Key</div>
+                    <div id="stat-key" class="stat-value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Scale</div>
+                    <div id="stat-scale" class="stat-value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Strength</div>
+                    <div id="stat-key-strength" class="stat-value">--</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Sections</div>
-                <div id="stat-sections" class="stat-value">--</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Duration</div>
-                <div id="stat-duration" class="stat-value">--s</div>
+
+            <div class="section-header">AI Classification</div>
+            <div id="classification-stats" class="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Genre</div>
+                    <div id="stat-genre" class="stat-value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Mood</div>
+                    <div id="stat-mood" class="stat-value">--</div>
+                </div>
+                <div class="stat-card" style="grid-column: span 2;">
+                    <div class="stat-label">Top Tags</div>
+                    <div id="stat-tags" class="stat-value" style="font-size: 0.9rem;">--</div>
+                </div>
             </div>
         </div>
     </div>
@@ -381,78 +450,26 @@
         }
 
         function displayResults(data) {
-            stats.style.display = 'grid';
+            stats.style.display = 'block';
 
             // 1. Basic Stats
-            document.getElementById('stat-bpm').innerText = Math.round(data.bpm);
-            document.getElementById('stat-onsets').innerText = data.onsets.length;
-            document.getElementById('stat-sections').innerText = data.structure.sections.length;
-            document.getElementById('stat-duration').innerText = Math.round(data.duration) + 's';
+            document.getElementById('stat-bpm').innerText = data.bpm ? Math.round(data.bpm) : '--';
+            document.getElementById('stat-onsets').innerText = data.onsets ? data.onsets.length : '--';
+            document.getElementById('stat-sections').innerText = data.structure ? data.structure.sections.length : '--';
+            document.getElementById('stat-duration').innerText = data.duration ? Math.round(data.duration) + 's' : '--s';
 
-            // 2. Classification Stats (New)
+            // 2. Classification Stats
             if (data.classification) {
-                // Ensure elements exist or add them dynamically if you prefer (updating HTML structure in next step)
-                // For now, let's log them to console or update if elements existed.
-                // We will add the HTML elements in a separate edit step or assume they are there.
-                console.log("Classification:", data.classification);
-
-                // Add classification row if missing
-                let classRow = document.getElementById('classification-stats');
-                if (!classRow) {
-                    classRow = document.createElement('div');
-                    classRow.id = 'classification-stats';
-                    classRow.className = 'stats'; // Reuse grid style
-                    classRow.style.marginTop = '1rem';
-
-                    classRow.innerHTML = `
-                        <div class="stat-card">
-                            <div class="stat-label">Genre</div>
-                            <div id="stat-genre" class="stat-value" style="font-size: 1rem;">--</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Mood</div>
-                            <div id="stat-mood" class="stat-value" style="font-size: 1rem;">--</div>
-                        </div>
-                        <div class="stat-card" style="grid-column: span 2;">
-                            <div class="stat-label">Top Tags</div>
-                            <div id="stat-tags" class="stat-value" style="font-size: 0.9rem; line-height: 1.4;">--</div>
-                        </div>
-                    `;
-                    stats.parentNode.insertBefore(classRow, stats.nextSibling);
-                }
-
-                document.getElementById('stat-genre').innerText = data.classification.genres.label;
-                document.getElementById('stat-mood').innerText = data.classification.moods.label;
-                document.getElementById('stat-tags').innerText = data.classification.tags.slice(0, 5).join(', ');
+                document.getElementById('stat-genre').innerText = data.classification.genres.label || '--';
+                document.getElementById('stat-mood').innerText = data.classification.moods.label || '--';
+                document.getElementById('stat-tags').innerText = data.classification.tags ? data.classification.tags.slice(0, 5).join(', ') : '--';
             }
 
-            // 3. Tonal Stats (New)
+            // 3. Tonal Stats
             if (data.tonal) {
-                let keyRow = document.getElementById('tonal-stats');
-                if (!keyRow) {
-                    keyRow = document.createElement('div');
-                    keyRow.id = 'tonal-stats';
-                    keyRow.className = 'stats';
-                    keyRow.style.marginTop = '1rem';
-                    keyRow.innerHTML = `
-                         <div class="stat-card">
-                            <div class="stat-label">Key</div>
-                            <div id="stat-key" class="stat-value">--</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Scale</div>
-                            <div id="stat-scale" class="stat-value" style="font-size: 1rem; text-transform: uppercase;">--</div>
-                        </div>
-                         <div class="stat-card">
-                            <div class="stat-label">Strength</div>
-                            <div id="stat-key-strength" class="stat-value">--</div>
-                        </div>
-                    `;
-                    stats.parentNode.insertBefore(keyRow, stats.nextSibling);
-                }
-                document.getElementById('stat-key').innerText = data.tonal.key;
-                document.getElementById('stat-scale').innerText = data.tonal.scale;
-                document.getElementById('stat-key-strength').innerText = Math.round(data.tonal.strength * 100) + '%';
+                document.getElementById('stat-key').innerText = data.tonal.key || '--';
+                document.getElementById('stat-scale').innerText = data.tonal.scale || '--';
+                document.getElementById('stat-key-strength').innerText = data.tonal.strength ? Math.round(data.tonal.strength * 100) + '%' : '0%';
             }
 
             // 3. Sections (using Regions Plugin)

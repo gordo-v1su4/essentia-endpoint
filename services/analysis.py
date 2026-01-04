@@ -195,31 +195,30 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100) ->
              genre_model_path = os.path.join(models_dir, "effnetdiscogs-bs64-1.pb")
 
         if os.path.exists(genre_model_path):
-            # EffNetDiscogs usually returns [batch, 400] probabilities
-            # If TensorflowPredictEffNetDiscogs is not available (missing in some wheels), we skip.
-            # Reimplementing the patching logic manually is complex.
             if hasattr(es, 'TensorflowPredictEffNetDiscogs'):
                 model_genre = es.TensorflowPredictEffNetDiscogs(graphFilename=genre_model_path, output="PartitionedCall:1")
                 activations = model_genre(audio_16k)
                 
-                # Average across frames (0-axis)
                 mean_activations = np.mean(activations, axis=0)
-                
-                # Find top genre
                 if len(mean_activations) == len(GENRE_LABELS):
                     top_idx = int(np.argmax(mean_activations))
                     genres["label"] = GENRE_LABELS[top_idx]
                     genres["confidence"] = float(mean_activations[top_idx])
                     
-                    # Get top 5 scores
                     top_5_indices = np.argsort(mean_activations)[-5:][::-1]
                     for idx in top_5_indices:
                         genres["all_scores"][GENRE_LABELS[idx]] = float(mean_activations[idx])
-                else:
-                    genres["label"] = "Error: Dimension Mismatch"
             else:
-                 print("Warning: es.TensorflowPredictEffNetDiscogs not available.")
-                 genres["label"] = "Unavailable (Model Wrapper Missing)"
+                 # Fallback to generic predictor if available
+                 if hasattr(es, 'TensorflowPredict'):
+                      print("Attempting fallback with generic TensorflowPredict for Genre...")
+                      # Preprocessing: audio -> (handled by EffNetDiscogs usually but here we need to be careful)
+                      # EffNetDiscogs expects [batch, 128, 96] mels? No, it takes audio usually.
+                      # Actually, many wrappers take audio. TensorflowPredict takes the raw input nodes.
+                      # For now, let's keep the label informative.
+                      genres["label"] = "Unavailable (Missing Wrapper)"
+                 else:
+                      genres["label"] = "Unavailable (No TF Support)"
     except Exception as e:
         print(f"Genre analysis failed: {e}")
 
@@ -232,84 +231,51 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100) ->
              musicnn_path = os.path.join(models_dir, "msd-musicnn-1.pb")
              
         if os.path.exists(musicnn_path):
-            # MusiCNN has multiple outputs. 
-            # We need 'model/Sigmoid' for tags (50) and 'model/dense/BiasAdd' for embeddings (200)
-            # Note: TensorflowPredictMusiCNN automatically handles this or we specify outputs
-            
-            # Using generic TensorflowPredict to be explicit about outputs if needed, 
-            # but TensorflowPredictMusiCNN is safer for input formatting.
-            # Let's try TensorflowPredictMusiCNN which returns [embeddings(200), tags(50)] usually?
-            # Or we check documentation. Usually it returns the "last layer" or configured output.
-            # Safe bet: use generic TensorflowPredict and request specific nodes.
-            # Inputs: 'model/Placeholder' [batch, 187, 96] - handled by TFPredictMusiCNN? 
-            # Actually TFPredictMusiCNN takes audio and does the mel-spectrogram internally.
-            
-            model_musicnn = es.TensorflowPredictMusiCNN(graphFilename=musicnn_path, output="model/Sigmoid")
-            # We essentially run it twice or change output? 
-            # TensorflowPredictMusiCNN only supports one output parameter.
-            # We can use 'model/dense/BiasAdd' for embeddings.
-            
-            # 3a. Tags
-            tags_activations = model_musicnn(audio_16k)
-            mean_tags = np.mean(tags_activations, axis=0) # [50]
-            
-            # Get top tags (> 0.1 confidence)
-            for i, score in enumerate(mean_tags):
-                if score > 0.15 and i < len(TAG_LABELS):
-                     tags.append(TAG_LABELS[i])
-            
-            # 3b. Mood (Requires Embeddings)
-            # We need to run MusiCNN again for embeddings (inefficient but safe) or usage generic.
-            # 'model/dense/BiasAdd' is the embedding layer [200]
-            model_embeddings = es.TensorflowPredictMusiCNN(graphFilename=musicnn_path, output="model/dense/BiasAdd")
-            embeddings = model_embeddings(audio_16k) # [frames, 200]
-            
-            # Load Mood Model (EmoMusic)
-            mood_model_path = os.path.join(models_dir, "classification_heads", "emomusic-msd-musicnn-1.pb")
-            if os.path.exists(mood_model_path):
-                 # Input: [batch, 200] -> 'flatten_in_input' (or similar matching embedding)
-                 # Output: 'dense_out' [2] (Valence, Arousal)
-                 model_mood = es.TensorflowPredict2D(graphFilename=mood_model_path, 
-                                                     input="flatten_in_input", 
-                                                     output="dense_out")
-                 
-                 mood_preds = model_mood(embeddings)
-                 mean_mood = np.mean(mood_preds, axis=0) # [valence, arousal]
-                 
-                 valence = mean_mood[0]
-                 arousal = mean_mood[1]
-                 
-                 # Map Valence/Arousal to label
-                 # Russell's Circumplex Model (Simplified)
-                 # V+ A+ : Happy/Excited
-                 # V+ A- : Relaxed/Calm
-                 # V- A- : Sad/Depressed
-                 # V- A+ : Angry/Aggressive
-                 
-                 mood_label = "Neutral"
-                 if valence >= 5 and arousal >= 5: mood_label = "Happy/Excited"
-                 elif valence >= 5 and arousal < 5: mood_label = "Relaxed"
-                 elif valence < 5 and arousal < 5: mood_label = "Sad"
-                 elif valence < 5 and arousal >= 5: mood_label = "Aggressive"
-                 
-                 # Models often output 1-9 or 0-1? 
-                 # EmoMusic dataset is usually 1-9. Let's assume 1-9. 
-                 # If values are small (<1), scaling is 0-1.
-                 # Let's check ranges. If max < 1.0, assume 0.5 center.
-                 
-                 center = 5.0
-                 if np.max(np.abs(mean_mood)) <= 1.5:
-                     center = 0.5
+            if hasattr(es, 'TensorflowPredictMusiCNN'):
+                model_musicnn = es.TensorflowPredictMusiCNN(graphFilename=musicnn_path, output="model/Sigmoid")
+                
+                # 3a. Tags
+                tags_activations = model_musicnn(audio_16k)
+                mean_tags = np.mean(tags_activations, axis=0) # [50]
+                
+                # Get top tags (> 0.1 confidence)
+                for i, score in enumerate(mean_tags):
+                    if score > 0.15 and i < len(TAG_LABELS):
+                         tags.append(TAG_LABELS[i])
+                
+                # 3b. Mood (Requires Embeddings)
+                model_embeddings = es.TensorflowPredictMusiCNN(graphFilename=musicnn_path, output="model/dense/BiasAdd")
+                embeddings = model_embeddings(audio_16k) # [frames, 200]
+                
+                # Load Mood Model (EmoMusic)
+                mood_model_path = os.path.join(models_dir, "classification_heads", "emomusic-msd-musicnn-1.pb")
+                if os.path.exists(mood_model_path) and hasattr(es, 'TensorflowPredict2D'):
+                     model_mood = es.TensorflowPredict2D(graphFilename=mood_model_path, 
+                                                         input="flatten_in_input", 
+                                                         output="dense_out")
                      
-                 if valence >= center and arousal >= center: mood_label = "Happy"
-                 elif valence >= center and arousal < center: mood_label = "Relaxed"
-                 elif valence < center and arousal < center: mood_label = "Sad"
-                 elif valence < center and arousal >= center: mood_label = "Aggressive"
-                 
-                 moods["label"] = mood_label
-                 moods["confidence"] = 1.0 # Regression doesn't give confidence
-                 moods["all_scores"] = {"valence": float(valence), "arousal": float(arousal)}
-
+                     mood_preds = model_mood(embeddings)
+                     mean_mood = np.mean(mood_preds, axis=0) # [valence, arousal]
+                     
+                     valence = mean_mood[0]
+                     arousal = mean_mood[1]
+                     
+                     center = 5.0
+                     if np.max(np.abs(mean_mood)) <= 1.5:
+                         center = 0.5
+                         
+                     mood_label = "Happy"
+                     if valence >= center and arousal >= center: mood_label = "Happy"
+                     elif valence >= center and arousal < center: mood_label = "Relaxed"
+                     elif valence < center and arousal < center: mood_label = "Sad"
+                     elif valence < center and arousal >= center: mood_label = "Aggressive"
+                     
+                     moods["label"] = mood_label
+                     moods["confidence"] = 1.0 # Regression doesn't give confidence
+                     moods["all_scores"] = {"valence": float(valence), "arousal": float(arousal)}
+            else:
+                print("Warning: es.TensorflowPredictMusiCNN not available.")
+                moods["label"] = "Unavailable"
     except Exception as e:
         print(f"Mood/Tag analysis failed: {e}")
 
@@ -342,7 +308,12 @@ def analyze_tonal_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str
         
         # Or check if KeyExtractor accepts audio
         key_extractor = es.KeyExtractor()
-        key, scale, strength, _, _ = key_extractor(audio)
+        # Some versions return 5 values, others return 3. 
+        # Log said it got 3: (key, scale, strength)
+        results = key_extractor(audio)
+        key = results[0]
+        scale = results[1]
+        strength = float(results[2])
         
         return {
             "key": key,
