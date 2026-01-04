@@ -55,7 +55,8 @@ else:
 async def analyze_rhythm(file: UploadFile = File(...)):
     """Extract BPM, beats, confidence, and high-quality onsets."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
-        tmp.write(await file.read())
+        content = await file.read()
+        tmp.write(content)
         tmp_path = tmp.name
     
     try:
@@ -69,7 +70,8 @@ async def analyze_rhythm(file: UploadFile = File(...)):
 async def analyze_structure(file: UploadFile = File(...)):
     """Segment audio into sections (intro, verse, chorus, etc.) using SBic."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
-        tmp.write(await file.read())
+        content = await file.read()
+        tmp.write(content)
         tmp_path = tmp.name
     
     try:
@@ -83,7 +85,8 @@ async def analyze_structure(file: UploadFile = File(...)):
 async def analyze_full(file: UploadFile = File(...)):
     """Perform full rhythm and structural analysis."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
-        tmp.write(await file.read())
+        content = await file.read()
+        tmp.write(content)
         tmp_path = tmp.name
     
     try:
