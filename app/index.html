@@ -95,32 +95,63 @@
             border-radius: 1rem;
             padding: 1.5rem;
             border: 1px solid var(--border);
-            display: none;
             position: relative;
         }
 
-        #waveform {
-            width: 100%;
-            height: 128px;
+        #daw-interface {
+            display: none;
+            /* Hidden until loaded */
         }
 
-        .controls {
+        /* DAW Specific Styles */
+        .transport-bar {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
             display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
             gap: 1rem;
-            margin-top: 1.5rem;
-            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .transport-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .slider-group label {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        input[type="range"] {
+            width: 100px;
+            accent-color: var(--accent);
         }
 
         button {
             background: var(--accent);
             color: white;
             border: none;
-            padding: 0.75rem 1.5rem;
+            padding: 0.5rem 1rem;
             border-radius: 0.5rem;
             font-family: inherit;
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s ease, opacity 0.2s ease;
+            font-size: 1.2rem;
+            /* Icons */
         }
 
         button:hover {
@@ -128,57 +159,50 @@
             opacity: 0.9;
         }
 
-        button:disabled {
-            background: #3f3f46;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        .stat-card {
-            background: var(--panel);
-            padding: 1.25rem 0.75rem;
-            border-radius: 0.75rem;
-            border: 1px solid var(--border);
-            text-align: center;
+        .led-container {
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            min-height: 100px;
-            overflow: hidden;
-            transition: border-color 0.3s;
+            align-items: center;
+            gap: 0.25rem;
         }
 
-        .stat-card:hover {
-            border-color: var(--accent);
-        }
-
-        .stat-label {
-            font-size: 0.7rem;
+        .led-container span {
+            font-size: 0.65rem;
             color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 0.5rem;
         }
 
-        .stat-value {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--accent);
-            white-space: normal;
-            word-wrap: break-word;
-            line-height: 1.2;
+        .led {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #333;
+            border: 1px solid #555;
+            transition: background-color 0.05s;
+        }
+
+        .led.active {
+            background-color: #0ff;
+            /* Cyan flash */
+            box-shadow: 0 0 10px #0ff;
+            border-color: #fff;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-group {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
         }
 
         .section-header {
             width: 100%;
-            margin-top: 2rem;
             margin-bottom: 0.75rem;
             font-size: 0.8rem;
             text-transform: uppercase;
@@ -187,6 +211,49 @@
             border-bottom: 1px solid var(--border);
             padding-bottom: 0.5rem;
             text-align: left;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-item .label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-item .val {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .val.text-accent {
+            color: var(--accent);
+        }
+
+        .val.small {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.2;
+        }
+
+        /* WaveSurfer overrides */
+        #waveform {
+            height: 160px;
+            background: #000;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
         }
 
         #status {
@@ -203,44 +270,6 @@
         #status.error {
             color: #ef4444;
             background: rgba(239, 68, 68, 0.1);
-        }
-
-        .marker {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: var(--onset);
-            pointer-events: none;
-            opacity: 0.6;
-            z-index: 10;
-        }
-
-        .segment-track {
-            height: 24px;
-            width: 100%;
-            margin-top: 0.5rem;
-            display: flex;
-            border-radius: 4px;
-            overflow: hidden;
-            background: #000;
-        }
-
-        .segment {
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: white;
-            text-transform: uppercase;
-            border-right: 1px solid rgba(0, 0, 0, 0.2);
-            transition: opacity 0.2s;
-        }
-
-        .segment:hover {
-            opacity: 0.8;
         }
 
         /* Loading Spinner */
@@ -266,163 +295,232 @@
 <body>
     <div class="container">
         <header>
-            <h1>Essentia Analysis V2</h1>
-            <p class="subtitle">High-quality audio segmentation and onset detection</p>
+            <h1>Essentia DAW Analysis</h1>
+            <p class="subtitle">Timeline, Grid & AI Classification</p>
         </header>
 
         <div id="drop-zone" class="drop-zone">
-            <p>Drag & drop an audio file here or click to upload</p>
+            <p>Drag & drop audio to analyze</p>
             <input type="file" id="file-input" hidden accept="audio/*">
         </div>
 
         <div id="loading" class="spinner"></div>
         <div id="status"></div>
 
-        <div id="waveform-container">
-            <div id="waveform"></div>
-            <div id="segment-track" class="segment-track"></div>
-            <div class="controls">
-                <button id="play-btn">Play / Pause</button>
-            </div>
-        </div>
+        <div id="daw-interface">
+            <!-- Transport Bar -->
+            <div class="transport-bar">
+                <div class="transport-group">
+                    <button id="prev-btn" title="Previous Marker">⏮</button>
+                    <button id="play-btn" title="Play/Pause">▶</button>
+                    <button id="next-btn" title="Next Marker">⏭</button>
+                </div>
 
-        <div id="stats" style="display: none; width: 100%;">
-            <div class="section-header">Rhythm & Structure</div>
-            <div class="stats">
-                <div class="stat-card">
-                    <div class="stat-label">BPM</div>
-                    <div id="stat-bpm" class="stat-value">--</div>
+                <div class="transport-group">
+                    <div class="led-container">
+                        <div id="cue-led" class="led"></div>
+                        <span>CUE</span>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-label">Onsets</div>
-                    <div id="stat-onsets" class="stat-value">--</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Sections</div>
-                    <div id="stat-sections" class="stat-value">--</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Duration</div>
-                    <div id="stat-duration" class="stat-value">--s</div>
-                </div>
-            </div>
 
-            <div class="section-header">Tonal Information</div>
-            <div id="tonal-stats" class="stats">
-                <div class="stat-card">
-                    <div class="stat-label">Key</div>
-                    <div id="stat-key" class="stat-value">--</div>
+                <div class="transport-group slider-group">
+                    <label>Sensitivity</label>
+                    <input type="range" id="density-slider" min="0" max="100" value="50">
+                    <span id="density-val">50%</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-label">Scale</div>
-                    <div id="stat-scale" class="stat-value">--</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Strength</div>
-                    <div id="stat-key-strength" class="stat-value">--</div>
+
+                <div class="transport-group slider-group">
+                    <label>Zoom</label>
+                    <input type="range" id="zoom-slider" min="10" max="200" value="100">
                 </div>
             </div>
 
-            <div class="section-header">AI Classification</div>
-            <div id="classification-stats" class="stats">
-                <div class="stat-card">
-                    <div class="stat-label">Genre</div>
-                    <div id="stat-genre" class="stat-value">--</div>
+            <div id="waveform-container">
+                <div id="waveform"></div>
+                <div id="timeline"></div>
+            </div>
+
+            <div id="stats" class="stats-grid">
+                <!-- RHYTHM -->
+                <div class="stat-group">
+                    <div class="section-header">Rhythm</div>
+                    <div class="stat-row">
+                        <div class="stat-item"><span class="label">BPM</span><span class="val" id="stat-bpm">--</span>
+                        </div>
+                        <div class="stat-item"><span class="label">Onsets</span><span class="val"
+                                id="stat-onsets">--</span></div>
+                        <div class="stat-item"><span class="label">Duration</span><span class="val"
+                                id="stat-duration">--</span></div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-label">Mood</div>
-                    <div id="stat-mood" class="stat-value">--</div>
+
+                <!-- TONAL -->
+                <div class="stat-group">
+                    <div class="section-header">Tonal</div>
+                    <div class="stat-row">
+                        <div class="stat-item"><span class="label">Key</span><span class="val text-accent"
+                                id="stat-key">--</span></div>
+                        <div class="stat-item"><span class="label">Scale</span><span class="val"
+                                id="stat-scale">--</span></div>
+                        <div class="stat-item"><span class="label">Conf</span><span class="val"
+                                id="stat-key-strength">--</span></div>
+                    </div>
                 </div>
-                <div class="stat-card" style="grid-column: span 2;">
-                    <div class="stat-label">Top Tags</div>
-                    <div id="stat-tags" class="stat-value" style="font-size: 0.9rem;">--</div>
+
+                <!-- AI CLASS -->
+                <div class="stat-group">
+                    <div class="section-header">Classification</div>
+                    <div class="stat-row">
+                        <div class="stat-item"><span class="label">Genre</span><span class="val text-accent"
+                                id="stat-genre">--</span></div>
+                        <div class="stat-item"><span class="label">Mood</span><span class="val" id="stat-mood">--</span>
+                        </div>
+                    </div>
+                    <div class="stat-row" style="margin-top: 5px;">
+                        <div class="stat-item" style="width: 100%;"><span class="label">Tags</span><span
+                                class="val small" id="stat-tags">--</span></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- WaveSurfer.js + Regions Plugin -->
+    <!-- WaveSurfer.js + Plugins -->
     <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
     <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.min.js"></script>
     <script>
-        // Use relative path for production, or specific localhost for dev
         const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
             ? 'http://localhost:8000'
             : 'https://essentia.v1su4.com';
 
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const waveformContainer = document.getElementById('waveform-container');
-        const stats = document.getElementById('stats');
-        const status = document.getElementById('status');
-        const loading = document.getElementById('loading');
-        const playBtn = document.getElementById('play-btn');
-        const segmentTrack = document.getElementById('segment-track');
+        // Elements
+        const els = {
+            dropZone: document.getElementById('drop-zone'),
+            fileInput: document.getElementById('file-input'),
+            dawInterface: document.getElementById('daw-interface'),
+            status: document.getElementById('status'),
+            loading: document.getElementById('loading'),
+            playBtn: document.getElementById('play-btn'),
+            prevBtn: document.getElementById('prev-btn'),
+            nextBtn: document.getElementById('next-btn'),
+            cueLed: document.getElementById('cue-led'),
+            densitySlider: document.getElementById('density-slider'),
+            zoomSlider: document.getElementById('zoom-slider'),
+            densityVal: document.getElementById('density-val')
+        };
 
-        let ws;
-        let wsRegions;
+        let ws, wsRegions, wsTimeline;
+        let analysisData = null;
+        let activeMarkers = [];
+        let isPlaying = false;
+        // 1/32 grid markers
+        let gridMarkers = [];
 
         function initWaveSurfer(url) {
             if (ws) ws.destroy();
 
-            // Create Regions Plugin
             wsRegions = WaveSurfer.Regions.create();
+            wsTimeline = WaveSurfer.Timeline.create({
+                height: 20,
+                timeInterval: 0.1,
+                primaryLabelInterval: 1,
+                style: { fontSize: '10px', color: '#666' }
+            });
 
             ws = WaveSurfer.create({
                 container: '#waveform',
                 waveColor: '#3f3f46',
                 progressColor: '#8b5cf6',
                 cursorColor: '#fff',
+                height: 160,
                 barWidth: 2,
                 barGap: 1,
                 barRadius: 2,
-                height: 128,
-                plugins: [wsRegions],
+                plugins: [wsRegions, wsTimeline],
+                minPxPerSec: 100
             });
 
             ws.load(url);
 
             ws.on('ready', () => {
-                waveformContainer.style.display = 'block';
-                status.style.display = 'none';
+                els.dawInterface.style.display = 'block';
+                els.status.style.display = 'none';
+                updateZoom(els.zoomSlider.value);
             });
 
-            ws.on('interaction', () => ws.play());
-            playBtn.onclick = () => ws.playPause();
+            ws.on('play', () => { isPlaying = true; els.playBtn.innerHTML = '⏸'; requestAnimationFrame(checkCue); });
+            ws.on('pause', () => { isPlaying = false; els.playBtn.innerHTML = '▶'; });
+            ws.on('finish', () => { isPlaying = false; els.playBtn.innerHTML = '▶'; });
         }
 
-        dropZone.onclick = () => fileInput.click();
+        // --- Cue LED & Grid Logic ---
+        function checkCue() {
+            if (!isPlaying) return;
 
-        dropZone.ondragover = (e) => {
-            e.preventDefault();
-            dropZone.classList.add('drag-over');
+            const currentTime = ws.getCurrentTime();
+            // Flash if we are within 50ms of a marker
+            const hit = activeMarkers.some(t => Math.abs(t - currentTime) < 0.05);
+
+            if (hit) {
+                els.cueLed.classList.add('active');
+                setTimeout(() => els.cueLed.classList.remove('active'), 100);
+            }
+
+            requestAnimationFrame(checkCue);
+        }
+
+        // --- Controls ---
+        els.playBtn.onclick = () => ws.playPause();
+
+        els.zoomSlider.oninput = (e) => updateZoom(e.target.value);
+        function updateZoom(val) {
+            if (ws) ws.zoom(Number(val));
+        }
+
+        els.densitySlider.oninput = (e) => {
+            const val = e.target.value;
+            els.densityVal.innerText = val + '%';
+            if (analysisData) updateMarkers(val);
         };
 
-        dropZone.ondragleave = () => dropZone.classList.remove('drag-over');
+        els.nextBtn.onclick = () => {
+            if (!activeMarkers.length) return;
+            const curr = ws.getCurrentTime();
+            const next = activeMarkers.find(t => t > curr + 0.01);
+            if (next) {
+                ws.seekTo(next / ws.getDuration());
+            }
+        };
 
-        dropZone.ondrop = (e) => {
+        els.prevBtn.onclick = () => {
+            if (!activeMarkers.length) return;
+            const curr = ws.getCurrentTime();
+            const prev = [...activeMarkers].reverse().find(t => t < curr - 0.01);
+            if (prev) {
+                ws.seekTo(prev / ws.getDuration());
+            } else {
+                ws.seekTo(0);
+            }
+        };
+
+        // --- File Handling ---
+        els.dropZone.onclick = () => els.fileInput.click();
+        els.dropZone.ondragover = (e) => { e.preventDefault(); els.dropZone.classList.add('drag-over'); };
+        els.dropZone.ondragleave = () => els.dropZone.classList.remove('drag-over');
+        els.dropZone.ondrop = (e) => {
             e.preventDefault();
-            dropZone.classList.remove('drag-over');
+            els.dropZone.classList.remove('drag-over');
             if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
         };
-
-        fileInput.onchange = (e) => {
-            if (e.target.files.length) handleFile(e.target.files[0]);
-        };
+        els.fileInput.onchange = (e) => { if (e.target.files.length) handleFile(e.target.files[0]); };
 
         async function handleFile(file) {
-            status.style.display = 'block';
-            status.innerText = 'Uploading & Analyzing (this may take a moment)...';
-            loading.style.display = 'block';
-            waveformContainer.style.display = 'none';
-            stats.style.display = 'none';
+            els.status.style.display = 'block';
+            els.status.innerText = 'Analyzing...';
+            els.loading.style.display = 'block';
+            els.dawInterface.style.display = 'none';
 
-            // Reset existing UI
-            if (ws) ws.destroy();
-            const existingMarkers = document.querySelectorAll('.marker');
-            existingMarkers.forEach(m => m.remove());
-
-            // Prepare Audio URL immediatley for visual
             const url = URL.createObjectURL(file);
             initWaveSurfer(url);
 
@@ -430,81 +528,119 @@
             formData.append('file', file);
 
             try {
-                const response = await fetch(`${API_BASE}/analyze/full`, {
-                    method: 'POST',
-                    body: formData
-                });
+                const res = await fetch(`${API_BASE}/analyze/full`, { method: 'POST', body: formData });
+                if (!res.ok) throw new Error(res.statusText);
+                analysisData = await res.json();
 
-                if (!response.ok) throw new Error(`Server Error: ${response.statusText}`);
-
-                const data = await response.json();
-                displayResults(data);
-                status.innerText = 'Analysis Complete!';
+                displayResults(analysisData);
+                els.status.innerText = 'Ready';
             } catch (err) {
                 console.error(err);
-                status.classList.add('error');
-                status.innerText = `Error: ${err.message}. (Check console/CORS)`;
+                els.status.innerText = `Error: ${err.message}`;
             } finally {
-                loading.style.display = 'none';
+                els.loading.style.display = 'none';
             }
         }
 
         function displayResults(data) {
-            stats.style.display = 'block';
-
-            // 1. Basic Stats
+            // Stats
             document.getElementById('stat-bpm').innerText = data.bpm ? Math.round(data.bpm) : '--';
             document.getElementById('stat-onsets').innerText = data.onsets ? data.onsets.length : '--';
-            document.getElementById('stat-sections').innerText = data.structure ? data.structure.sections.length : '--';
             document.getElementById('stat-duration').innerText = data.duration ? Math.round(data.duration) + 's' : '--s';
 
-            // 2. Classification Stats
-            if (data.classification) {
-                document.getElementById('stat-genre').innerText = data.classification.genres.label || '--';
-                document.getElementById('stat-mood').innerText = data.classification.moods.label || '--';
-                document.getElementById('stat-tags').innerText = data.classification.tags ? data.classification.tags.slice(0, 5).join(', ') : '--';
-            }
-
-            // 3. Tonal Stats
             if (data.tonal) {
                 document.getElementById('stat-key').innerText = data.tonal.key || '--';
                 document.getElementById('stat-scale').innerText = data.tonal.scale || '--';
-                document.getElementById('stat-key-strength').innerText = data.tonal.strength ? Math.round(data.tonal.strength * 100) + '%' : '0%';
+                document.getElementById('stat-key-strength').innerText = data.tonal.strength ? Math.round(data.tonal.strength * 100) + '%' : '--';
             }
 
-            // 3. Sections (using Regions Plugin)
+            if (data.classification) {
+                document.getElementById('stat-genre').innerText = data.classification.genres.label || 'N/A';
+                document.getElementById('stat-mood').innerText = data.classification.moods.label || 'N/A';
+                document.getElementById('stat-tags').innerText = data.classification.tags ? data.classification.tags.slice(0, 8).join(', ') : '--';
+            }
+
+            // Regions
             wsRegions.clearRegions();
-            const colors = {
-                'intro': 'rgba(59, 130, 246, 0.2)', // Blue
-                'outro': 'rgba(107, 114, 128, 0.2)', // Gray
-                'chorus': 'rgba(236, 72, 153, 0.3)', // Pink
-                'verse': 'rgba(139, 92, 246, 0.2)', // Purple
-                'section': 'rgba(16, 185, 129, 0.2)' // Green
-            };
-
-            data.structure.sections.forEach(seg => {
-                wsRegions.addRegion({
-                    start: seg.start,
-                    end: seg.end,
-                    color: colors[seg.label] || colors['section'],
-                    drag: false,
-                    resize: false,
-                    content: seg.label.toUpperCase()
+            if (data.structure && data.structure.sections) {
+                data.structure.sections.forEach(s => {
+                    wsRegions.addRegion({
+                        start: s.start,
+                        end: s.end,
+                        color: 'rgba(255, 255, 255, 0.1)',
+                        drag: false, resize: false,
+                        content: s.label
+                    });
                 });
-            });
+            }
 
-            // 4. Onsets (Markers)
-            // Limit onsets to avoid UI lag if > 500
-            const onsetsToShow = data.onsets.length > 500 ?
-                data.onsets.filter((_, i) => i % Math.ceil(data.onsets.length / 500) === 0) :
-                data.onsets;
+            // Initial Markers (Density 50)
+            updateMarkers(50);
+
+            // Draw 1/32 Rhythmic Grid
+            drawGrid(data.bpm, data.duration);
+        }
+
+        function drawGrid(bpm, duration) {
+            // Clear old grid
+            const oldGrid = document.querySelectorAll('.grid-line');
+            oldGrid.forEach(g => g.remove());
+
+            if (!bpm || bpm <= 0) return;
+
+            // 1/32 notes
+            // beat_interval = 60 / bpm
+            // 1/32 interval = beat_interval / 8
+            const interval = (60 / bpm) / 8;
+            const waveElem = document.getElementById('waveform');
+
+            for (let t = 0; t < duration; t += interval) {
+                const line = document.createElement('div');
+                line.className = 'grid-line';
+                line.style.position = 'absolute';
+                line.style.left = (t / duration * 100) + '%';
+                line.style.top = '0';
+                line.style.bottom = '0';
+                line.style.width = '1px';
+                line.style.background = 'rgba(255, 255, 255, 0.05)'; // Very subtle
+                line.style.pointerEvents = 'none';
+                line.style.zIndex = '1';
+                waveElem.appendChild(line);
+            }
+        }
+
+        function updateMarkers(density) {
+            if (!analysisData || !analysisData.onsets) return;
+
+            const total = analysisData.onsets.length;
+            if (density == 0) {
+                activeMarkers = [];
+            } else if (density == 100) {
+                activeMarkers = analysisData.onsets;
+            } else {
+                const percent = density / 100;
+                const step = 1 / percent;
+                activeMarkers = analysisData.onsets.filter((_, i) => i % Math.round(step) === 0);
+            }
+
+            // Draw ticks via DOM overlay
+            const oldTicks = document.querySelectorAll('.marker-tick');
+            oldTicks.forEach(t => t.remove());
 
             const waveElem = document.getElementById('waveform');
-            onsetsToShow.forEach(time => {
-                const marker = document.createElement('div');
-                marker.className = 'marker';
-                marker.style.left = (time / data.duration * 100) + '%';
-                waveElem.appendChild(marker);
+
+            activeMarkers.forEach(time => {
+                const tick = document.createElement('div');
+                tick.className = 'marker-tick';
+                tick.style.position = 'absolute';
+                tick.style.left = (time / analysisData.duration * 100) + '%';
+                tick.style.bottom = '0';
+                tick.style.height = '15%';
+                tick.style.width = '2px';
+                tick.style.background = 'var(--onset)';
+                tick.style.zIndex = '5';
+                tick.style.pointerEvents = 'none';
+                waveElem.appendChild(tick);
             });
         }
     </script>
