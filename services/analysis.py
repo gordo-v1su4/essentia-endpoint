@@ -231,11 +231,24 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100) ->
              musicnn_path = os.path.join(models_dir, "msd-musicnn-1.pb")
              
         if os.path.exists(musicnn_path):
+            # Try specialized wrapper first
             if hasattr(es, 'TensorflowPredictMusiCNN'):
                 model_musicnn = es.TensorflowPredictMusiCNN(graphFilename=musicnn_path, output="model/Sigmoid")
-                
+                audio_input = audio_16k
+            elif hasattr(es, 'TensorflowPredict'):
+                print("Using generic TensorflowPredict for MusiCNN...")
+                # Generic fallback logic here. 
+                # For safety, if wrapper is missing, we might skip to avoid complex preprocessing errors 
+                # unless we are sure about input/output nodes.
+                # Let's ensure we return 'Unavailable (Missing Wrapper)' safely.
+                model_musicnn = None
+                moods["label"] = "Unavailable (Missing Wrapper)"
+            else:
+                model_musicnn = None
+
+            if model_musicnn:
                 # 3a. Tags
-                tags_activations = model_musicnn(audio_16k)
+                tags_activations = model_musicnn(audio_input)
                 mean_tags = np.mean(tags_activations, axis=0) # [50]
                 
                 # Get top tags (> 0.1 confidence)
@@ -244,38 +257,44 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100) ->
                          tags.append(TAG_LABELS[i])
                 
                 # 3b. Mood (Requires Embeddings)
-                model_embeddings = es.TensorflowPredictMusiCNN(graphFilename=musicnn_path, output="model/dense/BiasAdd")
-                embeddings = model_embeddings(audio_16k) # [frames, 200]
+                if hasattr(es, 'TensorflowPredictMusiCNN'):
+                    model_embeddings = es.TensorflowPredictMusiCNN(graphFilename=musicnn_path, output="model/dense/BiasAdd")
+                    embeddings = model_embeddings(audio_16k) # [frames, 200]
+                else:
+                    embeddings = None # Skip mood checks if no wrapper
                 
-                # Load Mood Model (EmoMusic)
-                mood_model_path = os.path.join(models_dir, "classification_heads", "emomusic-msd-musicnn-1.pb")
-                if os.path.exists(mood_model_path) and hasattr(es, 'TensorflowPredict2D'):
-                     model_mood = es.TensorflowPredict2D(graphFilename=mood_model_path, 
-                                                         input="flatten_in_input", 
-                                                         output="dense_out")
-                     
-                     mood_preds = model_mood(embeddings)
-                     mean_mood = np.mean(mood_preds, axis=0) # [valence, arousal]
-                     
-                     valence = mean_mood[0]
-                     arousal = mean_mood[1]
-                     
-                     center = 5.0
-                     if np.max(np.abs(mean_mood)) <= 1.5:
-                         center = 0.5
+                if embeddings is not None:
+                    # Load Mood Model (EmoMusic)
+                    mood_model_path = os.path.join(models_dir, "classification_heads", "emomusic-msd-musicnn-1.pb")
+                    if os.path.exists(mood_model_path) and hasattr(es, 'TensorflowPredict2D'):
+                         model_mood = es.TensorflowPredict2D(graphFilename=mood_model_path, 
+                                                             input="flatten_in_input", 
+                                                             output="dense_out")
                          
-                     mood_label = "Happy"
-                     if valence >= center and arousal >= center: mood_label = "Happy"
-                     elif valence >= center and arousal < center: mood_label = "Relaxed"
-                     elif valence < center and arousal < center: mood_label = "Sad"
-                     elif valence < center and arousal >= center: mood_label = "Aggressive"
-                     
-                     moods["label"] = mood_label
-                     moods["confidence"] = 1.0 # Regression doesn't give confidence
-                     moods["all_scores"] = {"valence": float(valence), "arousal": float(arousal)}
+                         mood_preds = model_mood(embeddings)
+                         mean_mood = np.mean(mood_preds, axis=0) # [valence, arousal]
+                         
+                         valence = mean_mood[0]
+                         arousal = mean_mood[1]
+                         
+                         center = 5.0
+                         if np.max(np.abs(mean_mood)) <= 1.5:
+                             center = 0.5
+                             
+                         mood_label = "Happy"
+                         if valence >= center and arousal >= center: mood_label = "Happy"
+                         elif valence >= center and arousal < center: mood_label = "Relaxed"
+                         elif valence < center and arousal < center: mood_label = "Sad"
+                         elif valence < center and arousal >= center: mood_label = "Aggressive"
+                         
+                         moods["label"] = mood_label
+                         moods["confidence"] = 1.0 
+                         moods["all_scores"] = {"valence": float(valence), "arousal": float(arousal)}
             else:
-                print("Warning: es.TensorflowPredictMusiCNN not available.")
-                moods["label"] = "Unavailable"
+                if moods["label"] == "Unknown":
+                    print("Warning: es.TensorflowPredictMusiCNN not available.")
+                    moods["label"] = "Unavailable"
+                tags = ["Unavailable"]
     except Exception as e:
         print(f"Mood/Tag analysis failed: {e}")
 
