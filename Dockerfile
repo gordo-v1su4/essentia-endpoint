@@ -56,7 +56,9 @@ RUN apt-get update && \
     git \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3.11 /usr/bin/python \
-    && ln -sf /usr/bin/python3.11 /usr/bin/python3
+    && ln -sf /usr/bin/python3.11 /usr/bin/python3 \
+    && ln -sf /usr/bin/python3.11 /usr/local/bin/python3.11 \
+    && ln -sf /usr/bin/pip3 /usr/bin/pip
 
 # Note: git is already installed in the base image setup above
 
@@ -64,10 +66,12 @@ RUN apt-get update && \
 # If runtime errors occur about missing libraries, we'll add them back
 # For now, we skip runtime deps to get the build working
 
-# Copy Python packages from builder
-COPY --from=builder /root/.local /root/.local
+# Install Python packages directly (avoids shebang path issues from multi-stage)
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Make sure scripts in .local are usable
+# Make sure scripts in .local are usable (if any get installed there)
 ENV PATH=/root/.local/bin:$PATH
 
 # Copy application code
