@@ -68,6 +68,71 @@ docker-compose down
 | `API_HOST` | `0.0.0.0` | Host to bind the server to |
 | `API_PORT` | `8000` | Port to run the server on |
 | `CORS_ORIGINS` | `*` | Comma-separated list of allowed CORS origins |
+| `API_KEYS` | (required) | Comma-separated list of valid API keys |
+
+## Authentication
+
+All analysis endpoints require API key authentication. Include your API key in the `X-API-Key` header with every request.
+
+### Getting an API Key
+
+Contact the API administrator to receive your API key.
+
+### Using Your API Key
+
+Include the `X-API-Key` header in all requests to protected endpoints.
+
+**cURL Example:**
+```bash
+curl -X POST "https://essentia.v1su4.com/analyze/rhythm" \
+  -H "X-API-Key: your_api_key_here" \
+  -F "file=@audio.mp3"
+```
+
+**Python Example:**
+```python
+import requests
+
+headers = {"X-API-Key": "your_api_key_here"}
+files = {"file": open("audio.mp3", "rb")}
+
+response = requests.post(
+    "https://essentia.v1su4.com/analyze/rhythm",
+    headers=headers,
+    files=files
+)
+
+print(response.json())
+```
+
+**JavaScript Example:**
+```javascript
+const formData = new FormData();
+formData.append('file', audioFile);
+
+fetch('https://essentia.v1su4.com/analyze/rhythm', {
+  method: 'POST',
+  headers: {
+    'X-API-Key': 'your_api_key_here'
+  },
+  body: formData
+})
+.then(response => response.json())
+.then(data => console.log(data));
+```
+
+### Protected vs Public Endpoints
+
+**Protected (require API key):**
+- `POST /analyze/rhythm`
+- `POST /analyze/structure`
+- `POST /analyze/classification`
+- `POST /analyze/full`
+
+**Public (no authentication required):**
+- `GET /health` - Health check for monitoring systems
+- `GET /docs` - API documentation (Swagger UI)
+- `GET /redoc` - API documentation (ReDoc)
 
 ## API Documentation
 

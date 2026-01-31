@@ -2,19 +2,21 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Audio Analysis API",
-    "version": "1.0.0"
+    "description": "High-quality music analysis using Essentia C++ core via Python.",
+    "version": "2.0.0"
   },
   "paths": {
-    "/analyze": {
+    "/analyze/rhythm": {
       "post": {
-        "summary": "Analyze Audio",
-        "description": "Analyze uploaded audio file for beats and BPM.\nReturns: { bpm: number, beats: number[], confidence: number }",
-        "operationId": "analyze_audio_analyze_post",
+        "tags": ["Analysis"],
+        "summary": "Analyze Rhythm",
+        "description": "Extract BPM, beats, confidence, and high-quality onsets.",
+        "operationId": "analyze_rhythm_analyze_rhythm_post",
         "requestBody": {
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_analyze_audio_analyze_post"
+                "$ref": "#/components/schemas/Body_analyze_rhythm_analyze_rhythm_post"
               }
             }
           },
@@ -25,9 +27,14 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RhythmAnalysis"
+                }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
           },
           "422": {
             "description": "Validation Error",
@@ -39,19 +46,180 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/analyze/structure": {
+      "post": {
+        "tags": ["Analysis"],
+        "summary": "Analyze Structure",
+        "description": "Segment audio into sections (intro, verse, chorus, etc.) using SBic.",
+        "operationId": "analyze_structure_analyze_structure_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_analyze_structure_analyze_structure_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StructureAnalysis"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/analyze/classification": {
+      "post": {
+        "tags": ["Analysis"],
+        "summary": "Analyze Classification",
+        "description": "Analyze Genre, Mood, and Tags using Essentia TensorFlow models.",
+        "operationId": "analyze_classification_analyze_classification_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_analyze_classification_analyze_classification_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassificationAnalysis"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/analyze/full": {
+      "post": {
+        "tags": ["Analysis"],
+        "summary": "Analyze Full",
+        "description": "Perform full rhythm, structural, and classification analysis.",
+        "operationId": "analyze_full_analyze_full_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_analyze_full_analyze_full_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullAnalysis"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
       }
     },
     "/health": {
       "get": {
+        "tags": ["System"],
         "summary": "Health",
+        "description": "Check API health status.",
         "operationId": "health_health_get",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           }
@@ -61,65 +229,249 @@
   },
   "components": {
     "schemas": {
-      "Body_analyze_audio_analyze_post": {
+      "Body_analyze_rhythm_analyze_rhythm_post": {
+        "type": "object",
+        "required": ["file"],
         "properties": {
           "file": {
             "type": "string",
             "format": "binary",
             "title": "File"
           }
-        },
-        "type": "object",
-        "required": [
-          "file"
-        ],
-        "title": "Body_analyze_audio_analyze_post"
+        }
       },
-      "HTTPValidationError": {
+      "Body_analyze_structure_analyze_structure_post": {
+        "type": "object",
+        "required": ["file"],
         "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
           }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
+        }
       },
-      "ValidationError": {
+      "Body_analyze_classification_analyze_classification_post": {
+        "type": "object",
+        "required": ["file"],
         "properties": {
-          "loc": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          }
+        }
+      },
+      "Body_analyze_full_analyze_full_post": {
+        "type": "object",
+        "required": ["file"],
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          }
+        }
+      },
+      "RhythmAnalysis": {
+        "type": "object",
+        "required": ["bpm", "beats", "confidence", "onsets", "duration", "energy"],
+        "properties": {
+          "bpm": {
+            "type": "number",
+            "title": "BPM"
+          },
+          "beats": {
+            "type": "array",
             "items": {
-              "anyOf": [
-                {
+              "type": "number"
+            },
+            "title": "Beats"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "onsets": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "title": "Onsets"
+          },
+          "duration": {
+            "type": "number",
+            "title": "Duration"
+          },
+          "energy": {
+            "type": "object",
+            "properties": {
+              "mean": {
+                "type": "number"
+              },
+              "std": {
+                "type": "number"
+              },
+              "curve": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "StructureAnalysis": {
+        "type": "object",
+        "required": ["sections", "boundaries"],
+        "properties": {
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "start": {
+                  "type": "number"
+                },
+                "end": {
+                  "type": "number"
+                },
+                "label": {
                   "type": "string"
                 },
-                {
-                  "type": "integer"
+                "duration": {
+                  "type": "number"
+                },
+                "energy": {
+                  "type": "number"
                 }
-              ]
-            },
+              }
+            }
+          },
+          "boundaries": {
             "type": "array",
-            "title": "Location"
-          },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
+            "items": {
+              "type": "number"
+            }
           }
-        },
+        }
+      },
+      "ClassificationAnalysis": {
         "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
-        "title": "ValidationError"
+        "required": ["genres", "moods", "tags"],
+        "properties": {
+          "genres": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "number"
+              },
+              "all_scores": {
+                "type": "object"
+              }
+            }
+          },
+          "moods": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "number"
+              },
+              "all_scores": {
+                "type": "object"
+              }
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "TonalAnalysis": {
+        "type": "object",
+        "required": ["key", "scale", "strength"],
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "scale": {
+            "type": "string",
+            "title": "Scale"
+          },
+          "strength": {
+            "type": "number",
+            "title": "Strength"
+          }
+        }
+      },
+      "FullAnalysis": {
+        "type": "object",
+        "required": ["bpm", "beats", "confidence", "onsets", "duration", "energy", "structure"],
+        "properties": {
+          "bpm": {
+            "type": "number"
+          },
+          "beats": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "onsets": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "duration": {
+            "type": "number"
+          },
+          "energy": {
+            "type": "object"
+          },
+          "structure": {
+            "$ref": "#/components/schemas/StructureAnalysis"
+          },
+          "classification": {
+            "$ref": "#/components/schemas/ClassificationAnalysis"
+          },
+          "tonal": {
+            "$ref": "#/components/schemas/TonalAnalysis"
+          }
+        }
+      },
+      "HTTPValidationError": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API Key required for authentication. Contact the administrator to receive your API key."
       }
     }
   }
