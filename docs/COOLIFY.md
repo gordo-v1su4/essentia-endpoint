@@ -11,7 +11,7 @@ Coolify can deploy this API in multiple ways. **GitHub deployment is recommended
 1. **Push your code to GitHub** (if not already)
 2. **In Coolify**, select "Public Repository" or "Private Repository (with GitHub App)"
 3. **Connect your repository**
-4. **Set build context** to the project directory (e.g., `api/`)
+4. **Set build context** to the project root (`.`)
 5. **Coolify will auto-detect** the `Dockerfile`
 6. **Set environment variables** in Coolify dashboard:
    ```
@@ -32,7 +32,7 @@ Coolify can deploy this API in multiple ways. **GitHub deployment is recommended
 When setting up in Coolify, make sure to:
 - **Root Directory**: Leave empty or set to `/`
 - **Dockerfile Path**: `Dockerfile`
-- **Build Context**: `.` (if you are within the `api/` folder)
+- **Build Context**: `.` (project root)
 - **Branch**: Select your branch (defaults to `main`, but you can choose any branch)
 
 ### Branch Deployments
@@ -50,7 +50,7 @@ When setting up in Coolify, make sure to:
 ```bash
 # Work on feature branch
 git checkout -b feature/new-shader
-# Make changes to api/main.py
+# Make changes to main.py
 git push origin feature/new-shader
 
 # In Coolify:
@@ -72,7 +72,7 @@ git push origin feature/new-shader
 ### Steps:
 
 1. **In Coolify**, select "Dockerfile"
-2. **Upload** your `api/Dockerfile` and `api/requirements.txt`
+2. **Upload** your `Dockerfile` and `requirements.txt` (from project root)
 3. **Set environment variables** as above
 4. **Deploy**
 
@@ -88,7 +88,7 @@ git push origin feature/new-shader
 If you prefer using docker-compose.yml:
 
 1. **In Coolify**, select "Docker Compose Empty"
-2. **Upload** `api/docker-compose.yml` and related files
+2. **Upload** `docker-compose.yml` and related files (from project root)
 3. **Set environment variables** as above
 
 **Note:** For a single-service API, GitHub + Dockerfile is simpler and recommended.
@@ -98,7 +98,7 @@ Coolify can automatically detect and use the Dockerfile. This is the simplest ap
 ### Steps:
 
 1. **Connect your repository** to Coolify
-2. **Select the `api/` directory** as the build context
+2. **Select the project root** (`.`) as the build context
 3. **Coolify will auto-detect** the Dockerfile
 4. **Set environment variables** in Coolify dashboard:
    ```
@@ -121,7 +121,7 @@ Coolify can automatically detect and use the Dockerfile. This is the simplest ap
 If you prefer using docker-compose.yml:
 
 1. **In Coolify**, select "Docker Compose" as the deployment type
-2. **Point to** `api/docker-compose.yml`
+2. **Point to** `docker-compose.yml` (in project root)
 3. **Set environment variables** as above
 
 **Note:** You may need to remove the `version:` line from docker-compose.yml (which you've already done ✅) as newer Docker Compose versions don't require it.
@@ -157,8 +157,8 @@ After deployment, update your frontend `.env`:
 # If Coolify assigns a domain like: https://essentia-api.yourdomain.com
 VITE_ESSENTIA_API_URL=https://essentia-api.yourdomain.com
 
-# Or if using IP with port (less common with Coolify)
-VITE_ESSENTIA_API_URL=http://your-server-ip:8000
+# Or if using IP with port (Docker Compose local: 7000, uv local: 8000)
+VITE_ESSENTIA_API_URL=http://your-server-ip:7000
 ```
 
 ## Build Time Considerations
@@ -192,7 +192,7 @@ VITE_ESSENTIA_API_URL=http://your-server-ip:8000
 ## Quick Deploy Checklist
 
 - [ ] Repository connected to Coolify
-- [ ] Build context set to `api/` directory
+- [ ] Build context set to project root (`.`)
 - [ ] Environment variables configured (`CORS_ORIGINS`, `API_HOST`, `API_PORT`)
 - [ ] Domain assigned (or using IP)
 - [ ] Frontend `.env` updated with API URL

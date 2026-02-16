@@ -14,45 +14,34 @@ Additional documentation is available in the [`docs/`](docs/) folder:
 
 ## Quick Start
 
-### Local Development
+### Local Development (uv/uvicorn)
 
 ```bash
-# Install dependencies
-cd api
+# Install dependencies (from project root)
 uv venv
 uv pip install -r requirements.txt
 
-# Run server
+# Run server on port 8000
 uvicorn main:app --reload --port 8000
 ```
 
 ### Docker Deployment
 
-#### Build and Run
+#### Build and Run (single container)
 
 ```bash
-cd api
-
-# Build the image
+# Build the image (from project root)
 docker build -t essentia-api .
 
 # Run the container
-docker run -p 8000:8000 essentia-api
+docker run -p 8000:8000 -v ./models:/app/models essentia-api
 ```
-                                                                                                                                 
-#### Using Docker Compose
+
+#### Using Docker Compose (recommended)
 
 ```bash
-cd api
-
-# Copy environment file
-cp .env.example .env
-
-# Edit .env to set your CORS origins for production
-# CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
-
-# Start the service
-docker-compose up -d
+# From project root
+docker-compose up -d --build
 
 # View logs
 docker-compose logs -f
@@ -61,20 +50,31 @@ docker-compose logs -f
 docker-compose down
 ```
 
+## Ports
+
+| Run mode | Host port | Notes |
+|----------|-----------|-------|
+| **Local dev** (uvicorn) | `8000` | Direct Python run |
+| **Docker Compose** | `7000` | Default; set `EXTERNAL_PORT` to change |
+| **Production** (Coolify) | 80/443 | Reverse proxy handles it |
+
+The API always runs on port **8000** inside the container. Docker Compose maps `7000` on your host to `8000` in the container by default (avoids conflicts with other services). Use `http://localhost:7000` when running via Docker Compose.
+
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `API_HOST` | `0.0.0.0` | Host to bind the server to |
-| `API_PORT` | `8000` | Port to run the server on |
+| `API_PORT` | `8000` | Port inside container |
+| `EXTERNAL_PORT` | `7000` | Host port exposed by Docker Compose |
 | `CORS_ORIGINS` | `*` | Comma-separated list of allowed CORS origins |
 
 ## API Documentation
 
 ### Interactive Documentation
 
-- **Swagger UI**: https://essentia.v1su4.com/docs (or `http://localhost:8000/docs` for local)
-- **ReDoc**: https://essentia.v1su4.com/redoc (or `http://localhost:8000/redoc` for local)
+- **Swagger UI**: `http://localhost:8000/docs` (uv run) or `http://localhost:7000/docs` (Docker Compose) or https://essentia.v1su4.com/docs (production)
+- **ReDoc**: `http://localhost:8000/redoc` (uv run) or `http://localhost:7000/redoc` (Docker Compose) or https://essentia.v1su4.com/redoc (production)
 
 ### API Endpoints
 
@@ -154,18 +154,18 @@ Health check endpoint.
 
 1. **Copy files to server:**
    ```bash
-   scp -r api/ user@server:/path/to/deploy/
+   scp -r . user@server:/path/to/deploy/essentia-endpoint
    ```
 
 2. **SSH into server:**
    ```bash
    ssh user@server
-   cd /path/to/deploy/api
+   cd /path/to/deploy/essentia-endpoint
    ```
 
 3. **Build and run:**
    ```bash
-   docker-compose up -d
+   docker-compose up -d --build
    ```
 
 4. **Update frontend environment:**
@@ -220,8 +220,7 @@ If you see CORS errors from the frontend:
 
 ### Port Conflicts
 
-If port 8000 is already in use:
-- Change `API_PORT` environment variable
-- Update port mapping in docker-compose.yml
-- Update frontend `VITE_ESSENTIA_API_URL` accordingly
+- **Local dev (uv)**: Change port in uvicorn: `uvicorn main:app --reload --port 9000`
+- **Docker Compose**: Set `EXTERNAL_PORT=9000` in `.env` or `docker-compose.yml`
+- Update frontend `VITE_ESSENTIA_API_URL` or `API_BASE` in `app/index.html` accordingly
 

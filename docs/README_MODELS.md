@@ -13,7 +13,7 @@ The entrypoint script will:
 - 📥 Auto-download if missing (first time only)
 - 🎵 Start the API server
 
-**That's it!** Models are saved to `api/models/` (persistent storage)
+**That's it!** Models are saved to `./models/` (persistent storage)
 
 ## Manual Download (Optional)
 
@@ -25,15 +25,15 @@ docker-compose exec essentia-api /app/download_models.sh
 
 ## 📁 Storage
 
-- **Host:** `api/models/` (persistent, survives container restarts)
+- **Host:** `./models/` (persistent, survives container restarts)
 - **Container:** `/app/models/` (mounted volume)
 
 ## 🔄 Workflow
 
 ```
-1. docker-compose up -d          # Start container
-2. docker-compose exec ...        # Download models
-3. Models saved to api/models/    # Persistent storage
+1. docker-compose up -d          # Start container (API on port 7000)
+2. docker-compose exec ...        # Download models (if needed)
+3. Models saved to ./models/     # Persistent storage
 4. API uses models automatically  # No restart needed
 ```
 
@@ -46,7 +46,7 @@ docker-compose exec essentia-api /app/download_models.sh
 ## ⚠️ Important Notes
 
 - Models are **large files** (several GB total)
-- Models persist in `api/models/` even if you rebuild the container
+- Models persist in `./models/` even if you rebuild the container
 - First download may take 10-20 minutes depending on connection
 - Models are **TensorFlow format** (not SVM - code may need updates)
 

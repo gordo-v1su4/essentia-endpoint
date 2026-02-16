@@ -1,0 +1,13 @@
+# Local Docker Desktop override - runs without GPU
+# Use: docker-compose up -d --build
+services:
+  essentia-api:
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+          # No GPU - removed for local Docker Desktop

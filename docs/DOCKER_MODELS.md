@@ -9,9 +9,10 @@ The Essentia models are stored in persistent storage mounted as a Docker volume.
 ### 1. Start the Docker container (models auto-download!)
 
 ```bash
-cd api
+# From project root
 docker-compose up -d
 ```
+API available at `http://localhost:7000`.
 
 **The entrypoint script automatically:**
 - Checks if models exist in `/app/models`
@@ -22,7 +23,7 @@ docker-compose up -d
 
 ```bash
 # Check models directory on host
-ls -la api/models/
+ls -la models/
 
 # Or check inside container
 docker exec -it essentia-audio-api ls -la /app/models/
@@ -43,7 +44,7 @@ docker exec -it essentia-audio-api /app/download_models.sh
 
 ## Persistent Storage
 
-Models are stored in `api/models/` on your host machine and mounted to `/app/models` inside the container.
+Models are stored in `./models/` on your host machine and mounted to `/app/models` inside the container.
 
 **Volume mount configuration:**
 ```yaml
@@ -52,9 +53,9 @@ volumes:
 ```
 
 This means:
-- Models downloaded inside the container are saved to `api/models/` on your host
+- Models downloaded inside the container are saved to `./models/` on your host
 - Models persist even if you rebuild or restart the container
-- You can manually add/remove models by editing files in `api/models/`
+- You can manually add/remove models by editing files in `./models/`
 
 ## Environment Variable
 
@@ -74,10 +75,10 @@ The API will automatically look for models in this directory.
 
 2. **Copy models to the mounted directory:**
    ```bash
-   mkdir -p api/models
-   cp -r essentia-models/effnetdiscogs api/models/
-   cp -r essentia-models/classification_heads api/models/
-   cp -r essentia-models/musicnn api/models/
+   mkdir -p models
+   cp -r essentia-models/effnetdiscogs models/
+   cp -r essentia-models/classification_heads models/
+   cp -r essentia-models/musicnn models/
    ```
 
 3. **Restart the container to pick up new models:**
@@ -89,10 +90,10 @@ The API will automatically look for models in this directory.
 
 ```bash
 # Remove specific model
-rm -rf api/models/effnetdiscogs
+rm -rf models/effnetdiscogs
 
 # Remove all models
-rm -rf api/models/*
+rm -rf models/*
 ```
 
 ## Troubleshooting
@@ -101,7 +102,7 @@ rm -rf api/models/*
 
 1. **Check if models directory exists:**
    ```bash
-   ls -la api/models/
+   ls -la models/
    ```
 
 2. **Check container logs:**

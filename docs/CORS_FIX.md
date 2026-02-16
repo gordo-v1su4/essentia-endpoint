@@ -6,7 +6,7 @@ The API is returning CORS errors because when `allow_credentials=True`, you cann
 ## Solution
 The code has been updated to handle this automatically. You need to:
 
-1. **Deploy the updated `api/main.py`** to your server
+1. **Deploy the updated `main.py`** to your server
 2. **Set the `CORS_ORIGINS` environment variable** on your server
 
 ## Configuration Options

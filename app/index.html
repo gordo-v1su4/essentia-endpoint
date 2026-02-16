@@ -456,8 +456,9 @@
     <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.min.js"></script>
 
     <script>
+        // Local: 7000 = Docker Compose, 8000 = uv run. Change as needed.
         const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
-            ? 'http://localhost:8000'
+            ? 'http://localhost:7000'
             : 'https://essentia.v1su4.com';
 
         const els = {

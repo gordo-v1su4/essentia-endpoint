@@ -124,7 +124,7 @@ For EDM/electronic music, download these first:
 **Option 3: Use the helper script**
 
 ```bash
-cd api
+# From project root
 ./download_models.sh
 ```
 

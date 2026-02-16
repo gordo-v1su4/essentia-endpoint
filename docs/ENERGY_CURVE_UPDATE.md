@@ -114,11 +114,12 @@ uvicorn main:app --reload --port 8000
 ```bash
 cd C:\Users\Gordo\Documents\Github\essentia-endpoint
 
-# Build image
-docker build -t essentia-api:v2.1.0 .
+# Build and run with Docker Compose (port 7000 on host)
+docker-compose up -d --build
 
-# Run container
-docker run -d -p 8000:8000 essentia-api:v2.1.0
+# Or run single container (port 8000 on host)
+docker build -t essentia-api:v2.1.0 .
+docker run -d -p 8000:8000 -v ./models:/app/models essentia-api:v2.1.0
 ```
 
 ### Option 3: Deploy to Production (v1su4.com)
@@ -182,18 +183,17 @@ docker-compose up -d --build
 
 Test with a sample audio file:
 ```bash
+# Use port 8000 for uv run, 7000 for Docker Compose
+API_URL="http://localhost:7000"  # or 8000 for uv
+
 # Test rhythm analysis
-curl -X POST http://localhost:8000/analyze/rhythm \
-  -F "file=@sample.mp3" \
-  -o response.json
+curl -X POST $API_URL/analyze/rhythm -F "file=@sample.mp3" -o response.json
 
 # Check energy field
 cat response.json | jq '.energy'
 
 # Test full analysis
-curl -X POST http://localhost:8000/analyze/full \
-  -F "file=@sample.mp3" \
-  -o full_response.json
+curl -X POST $API_URL/analyze/full -F "file=@sample.mp3" -o full_response.json
 
 # Check section energy
 cat full_response.json | jq '.structure.sections[] | {label, energy}'
