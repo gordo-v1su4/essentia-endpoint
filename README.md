@@ -173,18 +173,28 @@ Health check endpoint.
 
 ### Option 2: Docker Hub / Container Registry
 
-1. **Build and push:**
+1. **Build and push** (use `build-push.ps1` on Windows or `build-push.sh` on Mac/Linux):
+   ```powershell
+   # Windows (default: gordov1su4)
+   .\build-push.ps1
+   ```
    ```bash
-   docker build -t yourusername/essentia-api:latest .
-   docker push yourusername/essentia-api:latest
+   # Mac/Linux (default: gordov1su4)
+   ./build-push.sh
+   ```
+   Or manually:
+   ```bash
+   docker build -t gordov1su4/essentia-api:2.0.1 -t gordov1su4/essentia-api:latest .
+   docker push gordov1su4/essentia-api:2.0.1
+   docker push gordov1su4/essentia-api:latest
    ```
 
 2. **Pull and run on server:**
    ```bash
-   docker pull yourusername/essentia-api:latest
-   docker run -d -p 8000:8000 \
+   docker pull gordov1su4/essentia-api:latest
+   docker run -d -p 8000:8000 -v ./models:/app/models \
      -e CORS_ORIGINS=https://yourdomain.com \
-     yourusername/essentia-api:latest
+     gordov1su4/essentia-api:latest
    ```
 
 ### Option 3: Cloud Platform (AWS, GCP, Azure)

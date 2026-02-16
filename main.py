@@ -22,6 +22,7 @@ from services.analysis import (
 )
 
 # Configuration
+API_VERSION = "2.0.1"
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
 # Default to '*' for easiest testing, user can override in Coolify
@@ -30,7 +31,7 @@ CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS_STR.split(",") if orig
 
 app = FastAPI(
     title="Audio Analysis API", 
-    version="2.0.0",
+    version=API_VERSION,
     description="High-quality music analysis using Essentia C++ core via Python."
 )
 
@@ -123,7 +124,7 @@ async def analyze_full(file: UploadFile = File(...)):
 @app.get("/health", tags=["System"])
 async def health():
     """Check API health status."""
-    return {"status": "ok", "version": "2.0.0"}
+    return {"status": "ok", "version": API_VERSION}
 
 if __name__ == "__main__":
     uvicorn.run(app, host=API_HOST, port=API_PORT)
