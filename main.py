@@ -2,12 +2,15 @@
 Audio Analysis API - Uses Essentia for high-quality modular audio analysis.
 Refactored for modularity and enhanced performance.
 
-Run with: uvicorn main:app --reload --port 8000
+Run with: uv run uvicorn main:app --reload --port 8000
 """
+# Silence TensorFlow GPU/NUMA info logs (must be before any TF import)
+import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = os.environ.get("TF_CPP_MIN_LOG_LEVEL", "3")
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import tempfile
-import os
 import uvicorn
 
 # Internal imports
@@ -22,7 +25,7 @@ from services.analysis import (
 )
 
 # Configuration
-API_VERSION = "2.0.1"
+API_VERSION = "2.0.2"
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
 # Default to '*' for easiest testing, user can override in Coolify

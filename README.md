@@ -14,48 +14,48 @@ Additional documentation is available in the [`docs/`](docs/) folder:
 
 ## Quick Start
 
-### Local Development (uv/uvicorn)
-
-```bash
-# Install dependencies (from project root)
-uv venv
-uv pip install -r requirements.txt
-
-# Run server on port 8000
-uvicorn main:app --reload --port 8000
-```
-
-### Docker Deployment
-
-#### Build and Run (single container)
-
-```bash
-# Build the image (from project root)
-docker build -t essentia-api .
-
-# Run the container
-docker run -p 8000:8000 -v ./models:/app/models essentia-api
-```
-
-#### Using Docker Compose (recommended)
+### Run Locally with Docker (recommended)
 
 ```bash
 # From project root
 docker-compose up -d --build
+```
 
+API at **http://localhost:7000**. No venv or Python install needed.
+
+```bash
 # View logs
 docker-compose logs -f
 
-# Stop the service
+# Stop
 docker-compose down
+```
+
+### Local Development (uv, for editing code)
+
+When iterating on code without rebuilding the image:
+
+```bash
+uv venv
+uv pip install -r requirements.txt
+uv run uvicorn main:app --reload --port 8000
+```
+
+API at **http://localhost:8000**.
+
+### Docker (single container, no Compose)
+
+```bash
+docker build -t essentia-api .
+docker run -p 7000:8000 -v ./models:/app/models essentia-api
 ```
 
 ## Ports
 
 | Run mode | Host port | Notes |
 |----------|-----------|-------|
-| **Local dev** (uvicorn) | `8000` | Direct Python run |
-| **Docker Compose** | `7000` | Default; set `EXTERNAL_PORT` to change |
+| **Docker** (local) | `7000` | Recommended; `docker-compose up -d` |
+| **uv** (dev) | `8000` | For code editing with hot reload |
 | **Production** (Coolify) | 80/443 | Reverse proxy handles it |
 
 The API always runs on port **8000** inside the container. Docker Compose maps `7000` on your host to `8000` in the container by default (avoids conflicts with other services). Use `http://localhost:7000` when running via Docker Compose.
@@ -184,8 +184,8 @@ Health check endpoint.
    ```
    Or manually:
    ```bash
-   docker build -t gordov1su4/essentia-api:2.0.1 -t gordov1su4/essentia-api:latest .
-   docker push gordov1su4/essentia-api:2.0.1
+   docker build -t gordov1su4/essentia-api:2.0.2 -t gordov1su4/essentia-api:latest .
+   docker push gordov1su4/essentia-api:2.0.2
    docker push gordov1su4/essentia-api:latest
    ```
 

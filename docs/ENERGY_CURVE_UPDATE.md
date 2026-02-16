@@ -105,8 +105,8 @@ cd C:\Users\Gordo\Documents\Github\essentia-endpoint
 # Install/update dependencies
 uv pip install -r requirements.txt
 
-# Run locally
-uvicorn main:app --reload --port 8000
+# Run locally (uv run uses .venv)
+uv run uvicorn main:app --reload --port 8000
 ```
 
 ### Option 2: Docker Deployment

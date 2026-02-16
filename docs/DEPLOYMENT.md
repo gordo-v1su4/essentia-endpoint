@@ -2,19 +2,19 @@
 
 ## Quick Start (Project Root)
 
-### Local Development (uv/uvicorn)
-```bash
-uv venv
-uv pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-```
-API available at `http://localhost:8000`.
-
-### Docker (Recommended for Production)
+### Docker (Run locally - recommended)
 ```bash
 docker-compose up -d --build
 ```
-API available at `http://localhost:7000` (host port 7000 → container port 8000).
+API at `http://localhost:7000`. No Python/venv setup needed.
+
+### Local Development (uv, for code editing)
+```bash
+uv venv
+uv pip install -r requirements.txt
+uv run uvicorn main:app --reload --port 8000
+```
+API at `http://localhost:8000`.
 
 ## Ports
 

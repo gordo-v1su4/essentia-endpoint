@@ -15,38 +15,32 @@ This is a FastAPI-based audio analysis API that uses Essentia (C++ core via Pyth
 
 ## Common Commands
 
-### Local Development
+### Run Locally (Docker - recommended)
 ```bash
-# Set up virtual environment (uses uv per user preference)
-uv venv
-uv pip install -r requirements.txt
-
-# Run development server with hot reload
-uvicorn main:app --reload --port 7000
-
-# Verify setup (tests imports and basic rhythm analysis)
-python verify_setup.py
-
-# Type checking (Pyright configured in pyrightconfig.json)
-pyright .
-```
-
-### Docker Commands
-```bash
-# Build and run with Docker Compose (recommended for production)
+# Build and run
 docker-compose up -d --build
 
 # View logs
 docker-compose logs -f
 
-# Stop services
+# Stop
 docker-compose down
+```
+API at http://localhost:7000.
 
-# Build image only
+### Local Development (uv, for code editing)
+```bash
+uv venv
+uv pip install -r requirements.txt
+uv run uvicorn main:app --reload --port 8000
+uv run python verify_setup.py
+pyright .
+```
+
+### Docker (manual)
+```bash
 docker build -t essentia-api .
-
-# Run container manually
-docker run -p 7000:8000 -e CORS_ORIGINS="*" essentia-api
+docker run -p 7000:8000 -v ./models:/app/models essentia-api
 ```
 
 ### Model Management

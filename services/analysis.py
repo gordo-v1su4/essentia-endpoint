@@ -1,3 +1,7 @@
+# Silence TensorFlow GPU/NUMA logs before essentia (which loads TF)
+import os
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
+
 import essentia.standard as es
 import numpy as np
 import os

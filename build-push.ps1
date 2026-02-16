@@ -4,7 +4,7 @@
 
 param(
     [string]$User = $env:DOCKERHUB_USER ?? "gordov1su4",
-    [string]$Version = "2.0.1"
+    [string]$Version = "2.0.2"
 )
 
 
