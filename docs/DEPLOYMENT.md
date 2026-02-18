@@ -1,14 +1,14 @@
-# API Deployment Guide
+# Deployment Guide
 
-## Quick Start (Project Root)
+## Quick Start
 
-### Docker (Run locally - recommended)
+### Docker Compose (recommended)
 ```bash
 docker-compose up -d --build
 ```
-API at `http://localhost:7000`. No Python/venv setup needed.
+API at `http://localhost:7000`. Models auto-download on first startup.
 
-### Local Development (uv, for code editing)
+### Local Development (uv)
 ```bash
 uv venv
 uv pip install -r requirements.txt
@@ -20,39 +20,58 @@ API at `http://localhost:8000`.
 
 | Mode | URL |
 |------|-----|
-| Local dev (uv) | `http://localhost:8000` |
 | Docker Compose | `http://localhost:7000` |
+| Local dev (uv) | `http://localhost:8000` |
 | Production (Coolify) | `https://your-domain.com` |
 
 ## Environment Variables
 
-Configure these in your `.env` file or directly in your deployment platform (Coolify, etc.):
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `API_KEYS` | (required) | Comma-separated valid API keys |
+| `API_PORT` | `8000` | Container port |
+| `EXTERNAL_PORT` | `7000` | Host port (docker-compose) |
+| `CORS_ORIGINS` | `*` | Comma-separated allowed origins |
+| `ESSENTIA_MODELS_PATH` | `/app/models` | TensorFlow models directory |
+| `TF_CPP_MIN_LOG_LEVEL` | `3` | Suppress TF logs |
 
-| Variable | Default / Example | Description |
-|----------|-------------------|-------------|
-| `CORS_ORIGINS` | `https://v1su4.dev` | Comma-separated allowlist of frontend domains. Use `*` to allow all. |
-| `API_HOST` | `0.0.0.0` | Binding address (must be `0.0.0.0` for Docker). |
-| `API_PORT` | `8000` | Internal container port. |
-| `EXTERNAL_PORT` | `7000` | Host port exposed by Docker Compose. Set to `8000` to match local dev. |
-| `ESSENTIA_MODELS_PATH` | `/app/models` | Internal container path for Essentia models. |
+## Coolify
 
-## Coolify Deployment Tips 🚀
+1. Connect your GitHub repo in Coolify
+2. Build context: `.` (project root)
+3. Set environment variables (`API_KEYS`, `CORS_ORIGINS`)
+4. Add persistent volume for `/app/models`
+5. Deploy — Coolify auto-detects the Dockerfile
 
-1. **Repository**: Point Coolify to your GitHub repo.
-2. **Build Context**: Set to `.` (the root directory).
-3. **Environment**: Add `CORS_ORIGINS=https://v1su4.dev`.
-4. **Storage**: Add a persistent volume for `/app/models`.
-5. **Port**: Coolify will automatically map its reverse proxy to the container's port `8000`.
+See [COOLIFY.md](COOLIFY.md) for details.
 
-## Testing UI
-The testing UI is located in the **`app/`** folder. 
-- Open [`app/index.html`](app/index.html) in your browser (or serve via `python -m http.server`).
-- Ensure `API_BASE` in the script matches your API: `http://localhost:8000` (uv) or `http://localhost:7000` (Docker).
+## Docker Hub
+
+```bash
+./build-push.sh          # Linux/macOS
+./build-push.ps1         # Windows
+```
+
+Then on server:
+```bash
+docker pull gordov1su4/essentia-api:latest
+docker run -d -p 7000:8000 -v ./models:/app/models \
+  -e API_KEYS=your_key \
+  -e CORS_ORIGINS=https://yourdomain.com \
+  gordov1su4/essentia-api:latest
+```
+
+## Verify
+
+```bash
+curl http://localhost:7000/health
+# {"status":"ok","version":"3.0.0"}
+```
 
 ## Production Checklist
 
-- [x] Pushed to GitHub
-- [ ] Set `CORS_ORIGINS` to `https://v1su4.dev`
-- [ ] Configure volume for `/app/models` in Coolify
-- [ ] Test `/health` endpoint after deployment
-- [ ] Delete `app/` folder after testing is complete
+- [ ] `API_KEYS` set
+- [ ] `CORS_ORIGINS` set to frontend domain(s)
+- [ ] Persistent volume for `/app/models`
+- [ ] `/health` endpoint responding
+- [ ] SSL via reverse proxy (Coolify/nginx/traefik)
