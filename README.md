@@ -84,7 +84,7 @@ Include the `X-API-Key` header in all requests to protected endpoints.
 
 **cURL Example:**
 ```bash
-curl -X POST "https://essentia.v1su4.com/analyze/rhythm" \
+curl -X POST "https://essentia.v1su4.dev/analyze/rhythm" \
   -H "X-API-Key: your_api_key_here" \
   -F "file=@audio.mp3"
 ```
@@ -97,7 +97,7 @@ headers = {"X-API-Key": "your_api_key_here"}
 files = {"file": open("audio.mp3", "rb")}
 
 response = requests.post(
-    "https://essentia.v1su4.com/analyze/rhythm",
+    "https://essentia.v1su4.dev/analyze/rhythm",
     headers=headers,
     files=files
 )
@@ -110,7 +110,7 @@ print(response.json())
 const formData = new FormData();
 formData.append('file', audioFile);
 
-fetch('https://essentia.v1su4.com/analyze/rhythm', {
+fetch('https://essentia.v1su4.dev/analyze/rhythm', {
   method: 'POST',
   headers: {
     'X-API-Key': 'your_api_key_here'
@@ -138,8 +138,8 @@ fetch('https://essentia.v1su4.com/analyze/rhythm', {
 
 ### Interactive Documentation
 
-- **Swagger UI**: `http://localhost:8000/docs` (uv run) or `http://localhost:7000/docs` (Docker Compose) or https://essentia.v1su4.com/docs (production)
-- **ReDoc**: `http://localhost:8000/redoc` (uv run) or `http://localhost:7000/redoc` (Docker Compose) or https://essentia.v1su4.com/redoc (production)
+- **Swagger UI**: `http://localhost:8000/docs` (uv run) or `http://localhost:7000/docs` (Docker Compose) or https://essentia.v1su4.dev/docs (production)
+- **ReDoc**: `http://localhost:8000/redoc` (uv run) or `http://localhost:7000/redoc` (Docker Compose) or https://essentia.v1su4.dev/redoc (production)
 
 ### API Endpoints
 
@@ -234,7 +234,7 @@ Health check endpoint.
    ```
 
 4. **Update frontend environment:**
-   - Set `VITE_ESSENTIA_API_URL=https://essentia.v1su4.com` in your frontend `.env` file
+   - Set `VITE_ESSENTIA_API_URL=https://essentia.v1su4.dev` in your frontend `.env` file
 
 ### Option 2: Docker Hub / Container Registry
 
@@ -249,8 +249,8 @@ Health check endpoint.
    ```
    Or manually:
    ```bash
-   docker build -t gordov1su4/essentia-api:2.0.2 -t gordov1su4/essentia-api:latest .
-   docker push gordov1su4/essentia-api:2.0.2
+   docker build -t gordov1su4/essentia-api:$(git rev-parse --short HEAD) -t gordov1su4/essentia-api:latest .
+   docker push gordov1su4/essentia-api:$(git rev-parse --short HEAD)
    docker push gordov1su4/essentia-api:latest
    ```
 
@@ -260,6 +260,16 @@ Health check endpoint.
    docker run -d -p 8000:8000 -v ./models:/app/models \
      -e CORS_ORIGINS=https://yourdomain.com \
      gordov1su4/essentia-api:latest
+   ```
+
+3. **Use registry image in Compose** (instead of local build):
+   ```bash
+   # .env
+   ESSENTIA_IMAGE=gordov1su4/essentia-api:latest
+
+   # On deployment host
+   docker-compose pull
+   docker-compose up -d
    ```
 
 ### Option 3: Cloud Platform (AWS, GCP, Azure)
@@ -298,4 +308,3 @@ If you see CORS errors from the frontend:
 - **Local dev (uv)**: Change port in uvicorn: `uvicorn main:app --reload --port 9000`
 - **Docker Compose**: Set `EXTERNAL_PORT=9000` in `.env` or `docker-compose.yml`
 - Update frontend `VITE_ESSENTIA_API_URL` or `API_BASE` in `app/index.html` accordingly
-

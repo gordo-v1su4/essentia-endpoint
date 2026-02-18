@@ -30,7 +30,7 @@ Configure these in your `.env` file or directly in your deployment platform (Coo
 
 | Variable | Default / Example | Description |
 |----------|-------------------|-------------|
-| `CORS_ORIGINS` | `https://v1su4.com` | Comma-separated allowlist of frontend domains. Use `*` to allow all. |
+| `CORS_ORIGINS` | `https://v1su4.dev` | Comma-separated allowlist of frontend domains. Use `*` to allow all. |
 | `API_HOST` | `0.0.0.0` | Binding address (must be `0.0.0.0` for Docker). |
 | `API_PORT` | `8000` | Internal container port. |
 | `EXTERNAL_PORT` | `7000` | Host port exposed by Docker Compose. Set to `8000` to match local dev. |
@@ -40,7 +40,7 @@ Configure these in your `.env` file or directly in your deployment platform (Coo
 
 1. **Repository**: Point Coolify to your GitHub repo.
 2. **Build Context**: Set to `.` (the root directory).
-3. **Environment**: Add `CORS_ORIGINS=https://v1su4.com`.
+3. **Environment**: Add `CORS_ORIGINS=https://v1su4.dev`.
 4. **Storage**: Add a persistent volume for `/app/models`.
 5. **Port**: Coolify will automatically map its reverse proxy to the container's port `8000`.
 
@@ -52,7 +52,7 @@ The testing UI is located in the **`app/`** folder.
 ## Production Checklist
 
 - [x] Pushed to GitHub
-- [ ] Set `CORS_ORIGINS` to `https://v1su4.com`
+- [ ] Set `CORS_ORIGINS` to `https://v1su4.dev`
 - [ ] Configure volume for `/app/models` in Coolify
 - [ ] Test `/health` endpoint after deployment
 - [ ] Delete `app/` folder after testing is complete

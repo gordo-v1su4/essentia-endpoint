@@ -122,7 +122,7 @@ docker build -t essentia-api:v2.1.0 .
 docker run -d -p 8000:8000 -v ./models:/app/models essentia-api:v2.1.0
 ```
 
-### Option 3: Deploy to Production (v1su4.com)
+### Option 3: Deploy to Production (v1su4.dev)
 
 If you're using Coolify or similar:
 
@@ -143,13 +143,13 @@ If you're using Coolify or similar:
 
 3. **Verify** the update:
    ```bash
-   curl https://essentia.v1su4.com/health
+   curl https://essentia.v1su4.dev/health
    # Should return: {"status":"ok","version":"2.0.0"}
    ```
 
 4. **Test energy endpoint**:
    ```bash
-   curl -X POST https://essentia.v1su4.com/analyze/rhythm \
+   curl -X POST https://essentia.v1su4.dev/analyze/rhythm \
      -F "file=@test.mp3" | jq '.energy'
    ```
 

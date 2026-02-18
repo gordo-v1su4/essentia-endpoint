@@ -23,7 +23,7 @@ CORS_ORIGINS=http://localhost:5173,https://your-production-domain.com
 ```
 This allows credentials and is more secure.
 
-## For Your Server (https://essentia.v1su4.com)
+## For Your Server (https://essentia.v1su4.dev)
 
 Since you're running on a server, you should set:
 ```bash
@@ -45,7 +45,7 @@ CORS_ORIGINS=*
 
 After deployment, test with:
 ```bash
-curl -X POST https://essentia.v1su4.com/health
+curl -X POST https://essentia.v1su4.dev/health
 ```
 
 Should return: `{"status":"ok"}`
@@ -56,4 +56,3 @@ The updated code also includes better error handling that will:
 - Return proper error responses instead of crashing
 - Log detailed error messages for debugging
 - Clean up temp files even on errors
-
