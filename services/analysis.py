@@ -7,6 +7,48 @@ import numpy as np
 from typing import List, Dict, Any, Optional, Set
 from fastapi import HTTPException
 
+
+def _find_model(base_dir: str, filename: str) -> Optional[str]:
+    """
+    Find a model .pb file, checking both flat and subdirectory layouts.
+    The essentia-models repo organizes classification heads in subdirs:
+      classification_heads/danceability/danceability-discogs-effnet-1.pb
+    But we also support flat layout:
+      classification_heads/danceability-discogs-effnet-1.pb
+    """
+    # 1. Flat: base_dir/filename
+    flat = os.path.join(base_dir, filename)
+    if os.path.exists(flat):
+        return flat
+
+    # 2. Subdirectory: base_dir/{task_name}/filename
+    #    e.g. "danceability-discogs-effnet-1.pb" -> subdir "danceability"
+    #    e.g. "emomusic-msd-musicnn-1.pb" -> subdir "emomusic"
+    #    e.g. "approachability_regression-discogs-effnet-1.pb" -> subdir "approachability"
+    #    e.g. "nsynth_acoustic_electronic-discogs-effnet-1.pb" -> subdir "nsynth_acoustic_electronic"
+    # Strategy: try progressively shorter prefixes split on '-'
+    parts = filename.replace(".pb", "").split("-")
+    for i in range(len(parts) - 1, 0, -1):
+        subdir = "-".join(parts[:i])
+        candidate = os.path.join(base_dir, subdir, filename)
+        if os.path.exists(candidate):
+            return candidate
+        # Also try underscore variant (approachability_regression -> approachability)
+        subdir_short = subdir.split("_")[0]
+        if subdir_short != subdir:
+            candidate = os.path.join(base_dir, subdir_short, filename)
+            if os.path.exists(candidate):
+                return candidate
+
+    # 3. Brute-force walk (last resort for odd layouts)
+    if os.path.isdir(base_dir):
+        for root, _dirs, files in os.walk(base_dir):
+            if filename in files:
+                return os.path.join(root, filename)
+
+    return None
+
+
 def load_audio(file_path: str, sample_rate: int = 44100) -> np.ndarray:
     """Load audio with Essentia and return the signal."""
     try:
@@ -311,10 +353,10 @@ def _get_musicnn_embeddings(audio_16k: np.ndarray, models_dir: str):
     return tag_activations, embeddings
 
 
-def _run_classification_head(embeddings, model_path: str, input_name: str = "flatten_in_input",
+def _run_classification_head(embeddings, model_path: Optional[str], input_name: str = "flatten_in_input",
                              output_name: str = "dense_out") -> Optional[np.ndarray]:
     """Run a TensorflowPredict2D classification head on embeddings."""
-    if embeddings is None or not os.path.exists(model_path):
+    if embeddings is None or model_path is None or not os.path.exists(model_path):
         return None
     if not hasattr(es, 'TensorflowPredict2D'):
         return None
@@ -416,7 +458,7 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100,
     if "mood" in features:
         moods = {"label": "Unknown", "confidence": 0.0, "all_scores": {}}
         if musicnn_embeddings is not None:
-            mood_model_path = os.path.join(heads_dir, "emomusic-msd-musicnn-1.pb")
+            mood_model_path = _find_model(heads_dir, "emomusic-msd-musicnn-1.pb")
             mood_preds = _run_classification_head(musicnn_embeddings, mood_model_path)
             if mood_preds is not None:
                 mean_mood = np.mean(mood_preds, axis=0)
@@ -440,13 +482,13 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100,
 
     # --- Danceability ---
     if "danceability" in features:
-        path = os.path.join(heads_dir, "danceability-discogs-effnet-1.pb")
+        path = _find_model(heads_dir, "danceability-discogs-effnet-1.pb")
         res = _binary_classification(effnet_embeddings, path, "Danceable", "Not Danceable")
         result["danceability"] = res
 
     # --- Approachability ---
     if "approachability" in features:
-        path = os.path.join(heads_dir, "approachability_regression-discogs-effnet-1.pb")
+        path = _find_model(heads_dir, "approachability_regression-discogs-effnet-1.pb")
         preds = _run_classification_head(effnet_embeddings, path)
         if preds is not None:
             score = float(np.mean(preds))
@@ -457,7 +499,7 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100,
 
     # --- Engagement ---
     if "engagement" in features:
-        path = os.path.join(heads_dir, "engagement_regression-discogs-effnet-1.pb")
+        path = _find_model(heads_dir, "engagement_regression-discogs-effnet-1.pb")
         preds = _run_classification_head(effnet_embeddings, path)
         if preds is not None:
             score = float(np.mean(preds))
@@ -468,19 +510,19 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100,
 
     # --- Acoustic/Electronic ---
     if "acoustic_electronic" in features:
-        path = os.path.join(heads_dir, "nsynth_acoustic_electronic-discogs-effnet-1.pb")
+        path = _find_model(heads_dir, "nsynth_acoustic_electronic-discogs-effnet-1.pb")
         res = _binary_classification(effnet_embeddings, path, "Electronic", "Acoustic")
         result["acoustic_electronic"] = res
 
     # --- Bright/Dark ---
     if "bright_dark" in features:
-        path = os.path.join(heads_dir, "nsynth_bright_dark-discogs-effnet-1.pb")
+        path = _find_model(heads_dir, "nsynth_bright_dark-discogs-effnet-1.pb")
         res = _binary_classification(effnet_embeddings, path, "Bright", "Dark")
         result["bright_dark"] = res
 
     # --- Instrument ---
     if "instrument" in features:
-        path = os.path.join(heads_dir, "mtg_jamendo_instrument-discogs-effnet-1.pb")
+        path = _find_model(heads_dir, "mtg_jamendo_instrument-discogs-effnet-1.pb")
         preds = _run_classification_head(effnet_embeddings, path)
         if preds is not None:
             mean_preds = np.mean(preds, axis=0)
@@ -495,7 +537,7 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100,
 
     # --- Tonal/Atonal ---
     if "tonal_atonal" in features:
-        path = os.path.join(heads_dir, "tonal_atonal-discogs-effnet-1.pb")
+        path = _find_model(heads_dir, "tonal_atonal-discogs-effnet-1.pb")
         res = _binary_classification(effnet_embeddings, path, "Tonal", "Atonal")
         result["tonal_atonal"] = res
 
@@ -507,7 +549,8 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100,
 # ---------------------------------------------------------------------------
 
 def analyze_vocals_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
-    """Detect vocal presence using voice_instrumental classification head with EffNet embeddings."""
+    """Detect vocal presence using voice_instrumental classification head with EffNet embeddings.
+    Returns vocal_presence as a continuous 0-1 score (0=instrumental, 1=vocals)."""
     models_dir = os.environ.get("ESSENTIA_MODELS_PATH", "/app/models")
     heads_dir = os.path.join(models_dir, "classification_heads")
 
@@ -516,24 +559,26 @@ def analyze_vocals_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[st
         audio_16k = resample(audio)
     except Exception as e:
         print(f"Resampling failed: {e}")
-        return {"is_vocal": False, "confidence": 0.0, "label": "Unknown"}
+        return {"vocal_presence": 0.0, "label": "Unknown"}
 
     _, effnet_embeddings = _get_effnet_embeddings(audio_16k, models_dir)
 
-    path = os.path.join(heads_dir, "voice_instrumental-discogs-effnet-1.pb")
+    path = _find_model(heads_dir, "voice_instrumental-discogs-effnet-1.pb")
     preds = _run_classification_head(effnet_embeddings, path)
 
     if preds is not None:
-        score = float(np.mean(preds))
-        # Convention: higher score = voice
-        is_vocal = score >= 0.5
+        # Raw score: 0.0 = instrumental, 1.0 = vocals
+        vocal_presence = float(np.mean(preds))
+        if vocal_presence >= 0.5:
+            label = "Voice"
+        else:
+            label = "Instrumental"
         return {
-            "is_vocal": is_vocal,
-            "confidence": score if is_vocal else 1.0 - score,
-            "label": "Voice" if is_vocal else "Instrumental",
+            "vocal_presence": round(vocal_presence, 4),
+            "label": label,
         }
 
-    return {"is_vocal": False, "confidence": 0.0, "label": "Unknown"}
+    return {"vocal_presence": 0.0, "label": "Unknown"}
 
 
 # ---------------------------------------------------------------------------

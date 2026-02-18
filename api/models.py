@@ -63,8 +63,7 @@ class EnhancedTonalAnalysis(BaseModel):
     pitch: Optional[PitchData] = None
 
 class VocalAnalysis(BaseModel):
-    is_vocal: bool
-    confidence: float
+    vocal_presence: float
     label: str
 
 class FullAnalysis(RhythmAnalysis):

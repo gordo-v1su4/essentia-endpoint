@@ -1,159 +1,131 @@
 #!/bin/bash
-# Script to download recommended Essentia models for EDM/electronic music analysis
-# Models from: https://essentia.upf.edu/models.html
-# Repo: https://github.com/MTG/essentia-models
+# Download Essentia TF models from the official distribution server
+# Source: https://essentia.upf.edu/models/
 
-# Set models directory (default or from env var)
+set -e
+
 MODELS_DIR="${ESSENTIA_MODELS_PATH:-/app/models}"
+BASE_URL="https://essentia.upf.edu/models"
 mkdir -p "$MODELS_DIR"
 
 echo "Downloading Essentia models to: $MODELS_DIR"
+echo "Source: $BASE_URL"
 echo ""
 
-# Check if git is available
-if ! command -v git &> /dev/null; then
-    echo "Git not found. Installing git..."
-    apt-get update && apt-get install -y git || {
-        echo "Failed to install git. Please install manually."
-        exit 1
-    }
-fi
-
-# GitHub repository
-REPO_URL="https://github.com/MTG/essentia-models.git"
-TEMP_DIR="/tmp/essentia-models"
-
-echo "Cloning Essentia models repository..."
-if [ -d "$TEMP_DIR" ]; then
-    echo "   Removing existing temp directory..."
-    rm -rf "$TEMP_DIR"
-fi
-
-# Clone the repository
-git clone --depth 1 "$REPO_URL" "$TEMP_DIR" || {
-    echo "Failed to clone repository. Trying with full history..."
-    rm -rf "$TEMP_DIR"
-    git clone "$REPO_URL" "$TEMP_DIR" || {
-        echo "Failed to clone repository. Please check your internet connection."
-        exit 1
-    }
-}
-
-echo ""
-echo "Available top-level dirs:"
-ls -1 "$TEMP_DIR" | head -15
-echo ""
-
-# Helper: copy a model directory, trying multiple source paths
-copy_model() {
-    local name="$1"
+# Helper: download a single model file
+dl() {
+    local url="$1"
     local dest="$2"
-    shift 2
-    local sources=("$@")
-
-    for src in "${sources[@]}"; do
-        if [ -d "$src" ]; then
-            echo "   Copying $name..."
-            mkdir -p "$dest"
-            cp -r "$src"/* "$dest/" 2>/dev/null || cp -r "$src" "$dest/" 2>/dev/null
-            echo "   -> $dest"
-            return 0
-        fi
-    done
-    echo "   $name not found in repository"
-    return 1
+    mkdir -p "$(dirname "$dest")"
+    if [ -f "$dest" ]; then
+        echo "   [SKIP] $(basename "$dest") (already exists)"
+        return 0
+    fi
+    echo "   [GET]  $(basename "$dest")"
+    curl -fSL --retry 3 --connect-timeout 30 -o "$dest" "$url" || {
+        echo "   [FAIL] $(basename "$dest")"
+        rm -f "$dest"
+        return 1
+    }
 }
-
-echo "Copying recommended models for EDM/electronic music..."
-echo ""
 
 # --- Feature Extractors ---
+echo "=== Feature Extractors ==="
 
-# Discogs EffNet (genre classification - 400 genres + embeddings)
-copy_model "discogs-effnet (genre classification)" \
-    "$MODELS_DIR/discogs-effnet" \
-    "$TEMP_DIR/feature-extractors/discogs-effnet" \
-    "$TEMP_DIR/discogs-effnet" \
-    "$TEMP_DIR/effnetdiscogs"
+echo "-- discogs-effnet (genre classification + embeddings) --"
+dl "$BASE_URL/feature-extractors/discogs-effnet/discogs-effnet-bs64-1.pb" \
+   "$MODELS_DIR/discogs-effnet/discogs-effnet-bs64-1.pb"
 
-# MusiCNN (auto-tagging + embeddings)
-copy_model "musicnn (auto-tagging)" \
-    "$MODELS_DIR/musicnn" \
-    "$TEMP_DIR/feature-extractors/musicnn" \
-    "$TEMP_DIR/musicnn"
+echo "-- musicnn (auto-tagging + embeddings) --"
+dl "$BASE_URL/feature-extractors/musicnn/msd-musicnn-1.pb" \
+   "$MODELS_DIR/musicnn/msd-musicnn-1.pb"
 
 # --- Classification Heads ---
+echo ""
+echo "=== Classification Heads ==="
 
-copy_model "classification-heads (mood, danceability, etc.)" \
-    "$MODELS_DIR/classification_heads" \
-    "$TEMP_DIR/classification-heads" \
-    "$TEMP_DIR/classification_heads"
+echo "-- emomusic (mood: valence/arousal) --"
+dl "$BASE_URL/classification-heads/emomusic/emomusic-msd-musicnn-1.pb" \
+   "$MODELS_DIR/classification_heads/emomusic/emomusic-msd-musicnn-1.pb"
+
+echo "-- danceability --"
+dl "$BASE_URL/classification-heads/danceability/danceability-discogs-effnet-1.pb" \
+   "$MODELS_DIR/classification_heads/danceability/danceability-discogs-effnet-1.pb"
+
+echo "-- voice_instrumental --"
+dl "$BASE_URL/classification-heads/voice_instrumental/voice_instrumental-discogs-effnet-1.pb" \
+   "$MODELS_DIR/classification_heads/voice_instrumental/voice_instrumental-discogs-effnet-1.pb"
+
+echo "-- approachability --"
+dl "$BASE_URL/classification-heads/approachability/approachability_regression-discogs-effnet-1.pb" \
+   "$MODELS_DIR/classification_heads/approachability/approachability_regression-discogs-effnet-1.pb"
+
+echo "-- engagement --"
+dl "$BASE_URL/classification-heads/engagement/engagement_regression-discogs-effnet-1.pb" \
+   "$MODELS_DIR/classification_heads/engagement/engagement_regression-discogs-effnet-1.pb"
+
+echo "-- nsynth_acoustic_electronic --"
+dl "$BASE_URL/classification-heads/nsynth_acoustic_electronic/nsynth_acoustic_electronic-discogs-effnet-1.pb" \
+   "$MODELS_DIR/classification_heads/nsynth_acoustic_electronic/nsynth_acoustic_electronic-discogs-effnet-1.pb"
+
+echo "-- nsynth_bright_dark --"
+dl "$BASE_URL/classification-heads/nsynth_bright_dark/nsynth_bright_dark-discogs-effnet-1.pb" \
+   "$MODELS_DIR/classification_heads/nsynth_bright_dark/nsynth_bright_dark-discogs-effnet-1.pb"
+
+echo "-- mtg_jamendo_instrument --"
+dl "$BASE_URL/classification-heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.pb" \
+   "$MODELS_DIR/classification_heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.pb"
+
+echo "-- tonal_atonal --"
+dl "$BASE_URL/classification-heads/tonal_atonal/tonal_atonal-discogs-effnet-1.pb" \
+   "$MODELS_DIR/classification_heads/tonal_atonal/tonal_atonal-discogs-effnet-1.pb"
 
 # --- Tempo ---
+echo ""
+echo "=== Tempo ==="
 
-copy_model "tempocnn (deep learning tempo estimation)" \
-    "$MODELS_DIR/tempocnn" \
-    "$TEMP_DIR/tempo/tempocnn" \
-    "$TEMP_DIR/tempocnn"
+echo "-- tempocnn --"
+dl "$BASE_URL/tempo/tempocnn/deeptemp-k16-3.pb" \
+   "$MODELS_DIR/tempocnn/deeptemp-k16-3.pb"
+dl "$BASE_URL/tempo/tempocnn/deepsquare-k16-3.pb" \
+   "$MODELS_DIR/tempocnn/deepsquare-k16-3.pb"
 
 # --- Pitch ---
-
-copy_model "crepe (pitch detection)" \
-    "$MODELS_DIR/crepe" \
-    "$TEMP_DIR/pitch/crepe" \
-    "$TEMP_DIR/crepe"
-
-# Verify classification heads include all needed models
 echo ""
-echo "Checking classification heads..."
-HEADS_DIR="$MODELS_DIR/classification_heads"
-if [ -d "$HEADS_DIR" ]; then
-    for head in danceability voice_instrumental approachability engagement \
-                nsynth_acoustic_electronic nsynth_bright_dark mtg_jamendo_instrument \
-                tonal_atonal emomusic; do
-        count=$(find "$HEADS_DIR" -name "*${head}*" 2>/dev/null | wc -l)
-        if [ "$count" -gt 0 ]; then
-            echo "   [OK] $head ($count files)"
-        else
-            echo "   [MISSING] $head"
-        fi
-    done
-else
-    echo "   classification_heads directory not found!"
-fi
+echo "=== Pitch ==="
 
-# Verify feature extractors
+echo "-- crepe (pitch detection, full model) --"
+dl "$BASE_URL/pitch/crepe/crepe-full-1.pb" \
+   "$MODELS_DIR/crepe/crepe-full-1.pb"
+
+# --- Verification ---
 echo ""
-echo "Checking feature extractors..."
-for model_dir in discogs-effnet musicnn; do
-    if [ -d "$MODELS_DIR/$model_dir" ]; then
-        count=$(find "$MODELS_DIR/$model_dir" -name "*.pb" 2>/dev/null | wc -l)
-        echo "   [OK] $model_dir ($count .pb files)"
+echo "=== Verification ==="
+TOTAL=0
+FOUND=0
+for pb in \
+    "$MODELS_DIR/discogs-effnet/discogs-effnet-bs64-1.pb" \
+    "$MODELS_DIR/musicnn/msd-musicnn-1.pb" \
+    "$MODELS_DIR/classification_heads/emomusic/emomusic-msd-musicnn-1.pb" \
+    "$MODELS_DIR/classification_heads/danceability/danceability-discogs-effnet-1.pb" \
+    "$MODELS_DIR/classification_heads/voice_instrumental/voice_instrumental-discogs-effnet-1.pb" \
+    "$MODELS_DIR/classification_heads/approachability/approachability_regression-discogs-effnet-1.pb" \
+    "$MODELS_DIR/classification_heads/engagement/engagement_regression-discogs-effnet-1.pb" \
+    "$MODELS_DIR/classification_heads/nsynth_acoustic_electronic/nsynth_acoustic_electronic-discogs-effnet-1.pb" \
+    "$MODELS_DIR/classification_heads/nsynth_bright_dark/nsynth_bright_dark-discogs-effnet-1.pb" \
+    "$MODELS_DIR/classification_heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.pb" \
+    "$MODELS_DIR/classification_heads/tonal_atonal/tonal_atonal-discogs-effnet-1.pb" \
+    "$MODELS_DIR/tempocnn/deeptemp-k16-3.pb" \
+    "$MODELS_DIR/crepe/crepe-full-1.pb"; do
+    TOTAL=$((TOTAL + 1))
+    if [ -f "$pb" ]; then
+        FOUND=$((FOUND + 1))
+        echo "   [OK]   $(basename "$pb")"
     else
-        echo "   [MISSING] $model_dir"
+        echo "   [MISS] $(basename "$pb")"
     fi
 done
 
-# Verify tempo/pitch models
 echo ""
-echo "Checking tempo & pitch models..."
-for model_dir in tempocnn crepe; do
-    if [ -d "$MODELS_DIR/$model_dir" ]; then
-        count=$(find "$MODELS_DIR/$model_dir" -name "*.pb" 2>/dev/null | wc -l)
-        echo "   [OK] $model_dir ($count .pb files)"
-    else
-        echo "   [MISSING] $model_dir"
-    fi
-done
-
-# Clean up temp directory
-echo ""
-echo "Cleaning up temporary files..."
-rm -rf "$TEMP_DIR"
-
-echo ""
-echo "Models download complete!"
-echo ""
-echo "Models location: $MODELS_DIR"
-echo "Installed model directories:"
-ls -1 "$MODELS_DIR" 2>/dev/null || echo "   (no models found)"
+echo "Models download complete: $FOUND/$TOTAL files present"
+echo "Location: $MODELS_DIR"

@@ -4,25 +4,36 @@
 set -e
 
 MODELS_DIR="${ESSENTIA_MODELS_PATH:-/app/models}"
+MODELS_VERSION="3"
+VERSION_FILE="$MODELS_DIR/.models_version"
 
-echo "🚀 Starting Essentia API..."
-echo "📁 Models directory: $MODELS_DIR"
+echo "Starting Essentia API..."
+echo "Models directory: $MODELS_DIR"
 
-# Check if models directory exists and has content
-if [ ! -d "$MODELS_DIR" ] || [ -z "$(ls -A $MODELS_DIR 2>/dev/null)" ]; then
+# Re-download if: no models, or models version changed (structure/source changed)
+CURRENT_VERSION=""
+if [ -f "$VERSION_FILE" ]; then
+    CURRENT_VERSION=$(cat "$VERSION_FILE" 2>/dev/null)
+fi
+
+if [ ! -d "$MODELS_DIR" ] || [ -z "$(ls -A $MODELS_DIR 2>/dev/null)" ] || [ "$CURRENT_VERSION" != "$MODELS_VERSION" ]; then
+    if [ "$CURRENT_VERSION" != "$MODELS_VERSION" ] && [ -n "$CURRENT_VERSION" ]; then
+        echo "Models version changed ($CURRENT_VERSION -> $MODELS_VERSION), re-downloading..."
+        rm -rf "$MODELS_DIR"
+        mkdir -p "$MODELS_DIR"
+    else
+        echo "No models found in $MODELS_DIR"
+    fi
+    echo "Auto-downloading models..."
     echo ""
-    echo "⚠️  No models found in $MODELS_DIR"
-    echo "📥 Auto-downloading models..."
-    echo ""
-    
-    # Run the download script
+
     /app/download_models.sh
-    
+
+    echo "$MODELS_VERSION" > "$VERSION_FILE"
     echo ""
-    echo "✅ Model download complete!"
+    echo "Model download complete!"
 else
-    echo "✅ Models already present in $MODELS_DIR"
-    echo "   (Skipping download - models found)"
+    echo "Models already present (v$CURRENT_VERSION)"
 fi
 
 echo ""

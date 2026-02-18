@@ -630,15 +630,12 @@
       },
       "VocalAnalysis": {
         "type": "object",
-        "required": ["is_vocal", "confidence", "label"],
+        "required": ["vocal_presence", "label"],
         "properties": {
-          "is_vocal": {
-            "type": "boolean",
-            "title": "Is Vocal"
-          },
-          "confidence": {
+          "vocal_presence": {
             "type": "number",
-            "title": "Confidence"
+            "title": "Vocal Presence",
+            "description": "Continuous 0-1 score. 0.0 = instrumental, 1.0 = vocals."
           },
           "label": {
             "type": "string",
