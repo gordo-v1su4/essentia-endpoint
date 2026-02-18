@@ -9,6 +9,7 @@ RUN apt-get update && \
     python3.11-dev \
     python3-pip \
     git \
+    curl \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3.11 /usr/bin/python \
     && ln -sf /usr/bin/python3.11 /usr/bin/python3 \
