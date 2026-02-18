@@ -4,18 +4,15 @@ Refactored for modularity and enhanced performance.
 
 Run with: uv run uvicorn main:app --reload --port 8000
 """
-# Silence TensorFlow GPU/NUMA info logs (must be before any TF import)
-import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = os.environ.get("TF_CPP_MIN_LOG_LEVEL", "3")
-
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import tempfile
 import uvicorn
+import os
 
 # Internal imports
-# Internal imports
 from api.models import RhythmAnalysis, StructureAnalysis, TonalAnalysis, FullAnalysis, ClassificationAnalysis
+from api.auth import verify_api_key
 from services.analysis import (
     load_audio, 
     analyze_rhythm_logic, 
@@ -52,7 +49,10 @@ app.add_middleware(
 
 
 @app.post("/analyze/rhythm", response_model=RhythmAnalysis, tags=["Analysis"])
-async def analyze_rhythm(file: UploadFile = File(...)):
+async def analyze_rhythm(
+    file: UploadFile = File(...),
+    api_key: str = Depends(verify_api_key)
+):
     """Extract BPM, beats, confidence, and high-quality onsets."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
         content = await file.read()
@@ -67,7 +67,10 @@ async def analyze_rhythm(file: UploadFile = File(...)):
             os.unlink(tmp_path)
 
 @app.post("/analyze/structure", response_model=StructureAnalysis, tags=["Analysis"])
-async def analyze_structure(file: UploadFile = File(...)):
+async def analyze_structure(
+    file: UploadFile = File(...),
+    api_key: str = Depends(verify_api_key)
+):
     """Segment audio into sections (intro, verse, chorus, etc.) using SBic."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
         content = await file.read()
@@ -78,14 +81,14 @@ async def analyze_structure(file: UploadFile = File(...)):
         audio = load_audio(tmp_path)
         return analyze_structure_logic(audio)
     finally:
-        if os.path.exists(tmp_path): 
-            os.unlink(tmp_path)
-
-        if os.path.exists(tmp_path): 
+        if os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
 @app.post("/analyze/classification", response_model=ClassificationAnalysis, tags=["Analysis"])
-async def analyze_classification(file: UploadFile = File(...)):
+async def analyze_classification(
+    file: UploadFile = File(...),
+    api_key: str = Depends(verify_api_key)
+):
     """Analyze Genre, Mood, and Tags using Essentia TensorFlow models."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
         content = await file.read()
@@ -100,7 +103,10 @@ async def analyze_classification(file: UploadFile = File(...)):
             os.unlink(tmp_path)
 
 @app.post("/analyze/full", response_model=FullAnalysis, tags=["Analysis"])
-async def analyze_full(file: UploadFile = File(...)):
+async def analyze_full(
+    file: UploadFile = File(...),
+    api_key: str = Depends(verify_api_key)
+):
     """Perform full rhythm, structural, and classification analysis."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
         content = await file.read()
