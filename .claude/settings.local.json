@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:deepwiki.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:essentia.upf.edu)",
+      "Bash(git push:*)",
+      "Bash(gh api:*)",
+      "Bash(xargs curl:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: model paths, download source, and vocal analysis\n\n- Fix classification head paths: search subdirectories \\(essentia repo\n  uses classification_heads/{task}/{file}.pb, not flat files\\)\n- Add _find_model\\(\\) helper that checks flat, subdirectory, and walks\n  the tree as fallback\n- Rewrite download_models.sh to use essentia.upf.edu direct URLs\n  instead of cloning the minimal GitHub repo\n- Add model versioning in entrypoint.sh to force re-download when\n  model structure changes\n- Change VocalAnalysis from boolean to continuous 0-1 vocal_presence\n  score \\(0.0 = instrumental, 1.0 = vocals\\)\n- Update OpenAPI schema for VocalAnalysis\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ndocs: update README for v3.0.0\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git rm:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ndocs: update all docs for v3.0.0, remove redundant files\n\n- Update COOLIFY.md, CORS_FIX.md, DEPLOYMENT.md, ENERGY_CURVE_UPDATE.md, MODELS_SETUP.md for v3.0.0\n- Remove redundant DOCKER_MODELS.md, MODELS_QUICK_START.md, README_MODELS.md \\(consolidated into MODELS_SETUP.md\\)\n- Fix model download URLs \\(essentia.upf.edu, not GitHub repo\\)\n- Add correct directory structure and model filenames\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}

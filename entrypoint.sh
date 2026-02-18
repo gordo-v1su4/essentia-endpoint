@@ -27,7 +27,7 @@ if [ ! -d "$MODELS_DIR" ] || [ -z "$(ls -A $MODELS_DIR 2>/dev/null)" ] || [ "$CU
     echo "Auto-downloading models..."
     echo ""
 
-    /app/download_models.sh
+    python /app/download_models.py
 
     echo "$MODELS_VERSION" > "$VERSION_FILE"
     echo ""
