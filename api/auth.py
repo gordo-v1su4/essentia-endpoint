@@ -6,7 +6,7 @@ Provides API key validation using FastAPI dependency injection.
 import os
 import secrets
 from typing import Set
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Security, status
 from fastapi.security import APIKeyHeader
 
 
@@ -48,7 +48,7 @@ api_key_header = APIKeyHeader(
 
 
 async def verify_api_key(
-    x_api_key: str = api_key_header
+    x_api_key: str = Security(api_key_header)
 ) -> str:
     """
     FastAPI dependency to verify API key from request header.
