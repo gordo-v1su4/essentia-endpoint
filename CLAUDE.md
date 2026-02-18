@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Essentia Audio Analysis API — a FastAPI server providing audio analysis (rhythm, structure, genre/mood classification, tonal) using the Essentia library with TensorFlow models. Targets electronic/EDM music. Current version: 2.0.2.
+Essentia Audio Analysis API — a FastAPI server providing audio analysis (rhythm, structure, genre/mood classification, tonal, vocals) using the Essentia library with TensorFlow models. Targets electronic/EDM music. Current version: 3.0.0.
 
 ## Build & Run Commands
 
@@ -40,8 +40,8 @@ There is no test suite — `verify_setup.py` is the only automated check.
 main.py                  FastAPI app, endpoint definitions, CORS setup
 ├── api/auth.py          API key auth (X-API-Key header, loaded from API_KEYS env)
 ├── api/models.py        Pydantic response models (RhythmAnalysis, StructureAnalysis, etc.)
-├── services/analysis.py Core analysis algorithms (rhythm, structure, classification, tonal)
-└── services/labels.py   Genre (400 Discogs labels) and tag (50 MusiCNN) mappings
+├── services/analysis.py Core analysis algorithms (rhythm, structure, classification, tonal, vocals)
+└── services/labels.py   Genre (400 Discogs labels), tag (50 MusiCNN), and instrument (40 Jamendo) mappings
 ```
 
 ### Request flow
@@ -54,19 +54,21 @@ main.py                  FastAPI app, endpoint definitions, CORS setup
 ### Endpoints
 - `POST /analyze/rhythm` — BPM, beats, onsets, energy curve
 - `POST /analyze/structure` — Section boundaries with labels (intro/verse/chorus/bridge/outro)
-- `POST /analyze/classification` — Genre (EffNetDiscogs), mood (EmoMusic), tags (MusiCNN)
-- `POST /analyze/tonal` — Key, scale, confidence
+- `POST /analyze/classification` — Genre, mood, tags + selectable features via `?features=` query param (danceability, approachability, engagement, acoustic_electronic, bright_dark, instrument, tonal_atonal)
+- `POST /analyze/tonal` — Key, scale, strength + TempoCNN tempo + CREPE pitch
+- `POST /analyze/vocals` — Voice/instrumental detection with confidence
 - `POST /analyze/full` — All of the above combined
 - `GET /health` — Health check (public, no auth)
 
 ### Analysis details
 - **Rhythm**: RhythmExtractor2013 (multifeature), dual-ODF onset detection (HFC + Complex), high-res RMS energy curve (512 hop size for ~86Hz / 60fps video sync)
 - **Structure**: MFCC-based segmentation via SBic with heuristic fallback; section labels assigned by position + energy relative to mean
-- **Classification**: TensorFlow models resampled to 16kHz — EffNetDiscogs (genres), EmoMusic (mood), MusiCNN (tags)
-- **Tonal**: Essentia KeyExtractor
+- **Classification**: TensorFlow models resampled to 16kHz — EffNetDiscogs (genres + embeddings for classification heads), EmoMusic (mood), MusiCNN (tags). Selectable features: genre, mood, tags, danceability, approachability, engagement, acoustic_electronic, bright_dark, instrument, tonal_atonal.
+- **Vocals**: EffNet embeddings + voice_instrumental classification head
+- **Tonal**: Essentia KeyExtractor + TempoCNN (deep learning tempo at 11025Hz) + CREPE (pitch detection at 16kHz)
 
 ### TensorFlow models
-Located in `models/` directory (Docker volume mount). Auto-downloaded on first container startup via `entrypoint.sh` from `https://github.com/MTG/essentia-models.git`. Three model sets: `effnetdiscogs/`, `classification_heads/`, `musicnn/`.
+Located in `models/` directory (Docker volume mount). Auto-downloaded on first container startup via `entrypoint.sh` from `https://github.com/MTG/essentia-models.git`. Model sets: `effnetdiscogs/`, `classification_heads/`, `musicnn/`, `tempocnn/`, `crepe/`.
 
 ## Key Environment Variables
 

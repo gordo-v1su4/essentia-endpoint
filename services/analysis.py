@@ -4,8 +4,7 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
 
 import essentia.standard as es
 import numpy as np
-import os
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set
 from fastapi import HTTPException
 
 def load_audio(file_path: str, sample_rate: int = 44100) -> np.ndarray:
@@ -23,90 +22,74 @@ def get_high_quality_onsets(audio: np.ndarray, sample_rate: int = 44100) -> List
     """
     frame_size = 1024
     hop_size = 512
-    
+
     w = es.Windowing(type='hann')
-    # FFT and CartesianToPolar to get both magnitude and phase
     fft = es.FFT()
     c2p = es.CartesianToPolar()
-    
-    # Define detection functions
-    # HFC only needs magnitude, but Complex needs both magnitude and phase
+
     od_hfc = es.OnsetDetection(method='hfc')
     od_complex = es.OnsetDetection(method='complex')
-    
-    # Onsets algorithm: returns onset times in seconds
+
     onsets_alg = es.Onsets()
-    
+
     hfc_values = []
     complex_values = []
-    
+
     for frame in es.FrameGenerator(audio, frameSize=frame_size, hopSize=hop_size):
         windowed = w(frame)
         fft_out = fft(windowed)
         mag, phase = c2p(fft_out)
-        
+
         hfc_values.append(od_hfc(mag, phase))
         complex_values.append(od_complex(mag, phase))
-    
-    # Ensure inputs are float32 2D arrays (Matrix) for Onsets algorithm
+
     hfc_array = np.array([hfc_values], dtype=np.float32)
     complex_array = np.array([complex_values], dtype=np.float32)
-    
-    # Weights for the single ODF
+
     weights = np.array([1.0], dtype=np.float32)
-    
+
     onsets_hfc = onsets_alg(hfc_array, weights)
     onsets_complex = onsets_alg(complex_array, weights)
-    
-    # Convert from algorithm internal time to absolute time
-    # Onsets returns seconds, but check if we need to scale based on hop size if it fails.
-    # In many versions, it uses the global sampleRate/hopSize which might need config.
-    
-    # Combine and deduplicate
+
     all_onsets = sorted(list(set(np.round(onsets_hfc, 3)) | set(np.round(onsets_complex, 3))))
-    
-    # Filter onsets too close together (min 50ms)
+
     filtered_onsets = []
     if all_onsets:
         filtered_onsets.append(float(all_onsets[0]))
         for o in all_onsets[1:]:
             if o - filtered_onsets[-1] >= 0.050:
                 filtered_onsets.append(float(o))
-                
+
     return filtered_onsets
 
 def analyze_rhythm_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
     """Core rhythm analysis logic."""
     rhythm_extractor = es.RhythmExtractor2013(method="multifeature")
     bpm, beats, beats_confidence, _, _ = rhythm_extractor(audio)
-    
+
     onsets = get_high_quality_onsets(audio, sample_rate)
     duration = float(len(audio) / sample_rate)
-    
-    # High-resolution Energy Curve for Speed Ramping
-    # Hop size 512 at 44.1kHz is ~11.6ms (approx 86Hz), good for ~60fps video
+
     frame_size = 1024
     hop_size = 512
     rms_frames = es.FrameGenerator(audio, frameSize=frame_size, hopSize=hop_size)
     rms = es.RMS()
     rms_curve = []
-    
+
     for frame in rms_frames:
         rms_val = rms(frame)
         rms_curve.append(float(rms_val))
-    
-    # Normalize curve to 0-1 for easier mapping
+
     if rms_curve:
         max_rms = max(rms_curve)
         if max_rms > 0:
             rms_curve = [val / max_rms for val in rms_curve]
-    
-    # Calculate overall energy statistics
+
     energy_analyzer = es.Energy()
     energy = energy_analyzer(audio)
     energy_mean = float(np.mean(energy) if hasattr(energy, '__len__') else energy)
     energy_std = float(np.std(energy) if hasattr(energy, '__len__') and len(energy) > 1 else 0.0)
-    
+
     return {
         "bpm": float(bpm),
         "beats": [float(b) for b in beats],
@@ -126,28 +109,25 @@ def generate_fallback_boundaries(duration: float) -> List[float]:
     Creates reasonable sections based on typical song structure.
     """
     boundaries = [0.0]
-    
-    # Intro: first 10% or 15s, whichever is smaller
+
     intro_end = min(duration * 0.10, 15.0)
     if intro_end > 5:
         boundaries.append(intro_end)
-    
-    # Main body: divide into ~30s sections
+
     main_start = boundaries[-1]
-    outro_start = duration - min(duration * 0.15, 20.0)  # Last 15% or 20s
+    outro_start = duration - min(duration * 0.15, 20.0)
     main_duration = outro_start - main_start
-    
+
     if main_duration > 20:
-        num_sections = max(2, int(main_duration / 30))  # ~30s per section, at least 2
+        num_sections = max(2, int(main_duration / 30))
         section_duration = main_duration / num_sections
-        
+
         for i in range(1, num_sections):
             boundaries.append(main_start + i * section_duration)
-    
-    # Add outro boundary
+
     if duration - outro_start > 5:
         boundaries.append(outro_start)
-    
+
     boundaries.append(duration)
     return boundaries
 
@@ -157,28 +137,21 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
     Processes audio to find boundaries and repeated patterns.
     """
     duration = float(len(audio) / sample_rate)
-    
-    # 1. Feature Extraction (MFCCs)
+
     frame_size = 2048
     hop_size = 1024
     w = es.Windowing(type='hann')
     spec = es.Spectrum()
     mfcc = es.MFCC(numberCoefficients=13)
-    
+
     mfccs = []
     for frame in es.FrameGenerator(audio, frameSize=frame_size, hopSize=hop_size):
         _, m = mfcc(spec(w(frame)))
         mfccs.append(m)
-    
-    # 2. Boundary detection using SBic
-    # minLength in frames: at 1024 hop @ 44.1kHz, 1 frame = ~23ms
-    # 300 frames = ~7s minimum section, 500 frames = ~11s
-    # Using 300 frames for better granularity while avoiding micro-segments
+
     min_frames = 300
-    
-    # Ensure we have enough frames for SBic to work
+
     if len(mfccs) < min_frames * 2:
-        # Audio too short for meaningful segmentation
         print(f"[Structure] Audio too short ({len(mfccs)} frames), using fallback")
         boundaries_frames = []
     else:
@@ -189,33 +162,23 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
         except Exception as e:
             print(f"[Structure] SBic failed: {e}, using fallback")
             boundaries_frames = []
-    
-    # Convert boundary frames to seconds
-    # SBic returns frame indices relative to the input array.
+
     bound_secs = sorted([float(f * hop_size / sample_rate) for f in boundaries_frames])
-    
-    # Filter out boundaries that are too close together (< 5s) or at the very start/end
+
     filtered_bounds = []
     for b in bound_secs:
-        if b > 2.0 and b < (duration - 2.0):  # At least 2s from start/end
-            if not filtered_bounds or (b - filtered_bounds[-1]) >= 5.0:  # At least 5s apart
+        if b > 2.0 and b < (duration - 2.0):
+            if not filtered_bounds or (b - filtered_bounds[-1]) >= 5.0:
                 filtered_bounds.append(b)
-    
+
     boundaries = [0.0] + filtered_bounds + [duration]
-    
-    # If SBic found no useful boundaries, create fallback sections
+
     if len(boundaries) <= 2:
         print(f"[Structure] No boundaries found, generating fallback sections for {duration}s track")
         boundaries = generate_fallback_boundaries(duration)
-    
-    # 3. Clustering / Labeling
-    # For a high-quality implementation, we could use SegmentClustering here.
-    # However, SegmentClustering requires a specific feature matrix format.
-    # Let's use it to group similar segments.
-    
+
     sections = []
     if len(boundaries) > 2:
-        # 1. Calculate features for each segment
         segment_data = []
         for i in range(len(boundaries) - 1):
             start = boundaries[i]
@@ -223,12 +186,12 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
             start_s = int(start * sample_rate)
             end_s = int(end * sample_rate)
             chunk = audio[start_s:end_s]
-            
+
             if len(chunk) > 0:
                 energy = float(np.mean(chunk**2))
             else:
                 energy = 0.0
-                
+
             segment_data.append({
                 "start": float(start),
                 "end": float(end),
@@ -236,29 +199,20 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
                 "pos": ((start + end) / 2) / duration
             })
 
-        # 2. Heuristic Labeling
-        # Identify Intro/Outro first, then use energy for Verse/Chorus/Bridge
-        # Note: This is an improved heuristic until a full classifier is integrated.
-        
         avg_energy = np.mean([s["energy"] for s in segment_data]) if segment_data else 0
         num_segments = len(segment_data)
-        
-        # Track verse/chorus alternation for better labeling
+
         verse_count = 0
         chorus_count = 0
-        
+
         for i, s in enumerate(segment_data):
             label = "section"
-            
-            # First segment with low energy = intro
+
             if i == 0 and s["pos"] < 0.15:
                 label = "intro"
-            # Last segment = outro
             elif i == num_segments - 1 and s["pos"] > 0.80:
                 label = "outro"
-            # Middle-ish section with notably different energy = bridge
             elif 0.5 <= s["pos"] <= 0.75 and num_segments >= 5:
-                # Bridge is often in the 50-75% mark and has different energy profile
                 if abs(s["energy"] - avg_energy) < avg_energy * 0.2:
                     label = "bridge"
                 elif s["energy"] > avg_energy * 1.1:
@@ -268,14 +222,13 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
                     label = "verse"
                     verse_count += 1
             else:
-                # Use relative energy for Verse vs Chorus
                 if s["energy"] > avg_energy * 1.1:
                     label = "chorus"
                     chorus_count += 1
                 else:
                     label = "verse"
                     verse_count += 1
-            
+
             sections.append({
                 "start": s["start"],
                 "end": s["end"],
@@ -283,10 +236,9 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
                 "duration": float(s["end"] - s["start"]),
                 "energy": s["energy"]
             })
-        
+
         print(f"[Structure] Labeled {num_segments} sections: {verse_count} verse, {chorus_count} chorus")
     else:
-        # Fallback for short audio
         sections.append({
             "start": 0.0,
             "end": duration,
@@ -294,190 +246,381 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
             "duration": duration,
             "energy": 0.0
         })
-        
+
     return {
         "sections": sections,
         "boundaries": boundaries
     }
 
-def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
+
+# ---------------------------------------------------------------------------
+# Shared embedding extraction helpers
+# ---------------------------------------------------------------------------
+
+ALL_CLASSIFICATION_FEATURES = {
+    "genre", "mood", "tags", "danceability", "approachability", "engagement",
+    "acoustic_electronic", "bright_dark", "instrument", "tonal_atonal",
+}
+
+def _get_effnet_embeddings(audio_16k: np.ndarray, models_dir: str):
+    """Extract EffNet embeddings (used by genre + several classification heads)."""
+    genre_model_path = os.path.join(models_dir, "discogs-effnet", "discogs-effnet-bs64-1.pb")
+    if not os.path.exists(genre_model_path):
+        # Fallback to old naming convention
+        genre_model_path = os.path.join(models_dir, "effnetdiscogs", "effnetdiscogs-bs64-1.pb")
+    if not os.path.exists(genre_model_path):
+        genre_model_path = os.path.join(models_dir, "discogs-effnet-bs64-1.pb")
+
+    if not os.path.exists(genre_model_path) or not hasattr(es, 'TensorflowPredictEffnetDiscogs'):
+        return None, None
+
+    # Full activations (genre predictions)
+    model_genre = es.TensorflowPredictEffnetDiscogs(
+        graphFilename=genre_model_path, output="PartitionedCall:1"
+    )
+    activations = model_genre(audio_16k)
+
+    # Embeddings for classification heads
+    model_embed = es.TensorflowPredictEffnetDiscogs(
+        graphFilename=genre_model_path, output="PartitionedCall:0"
+    )
+    embeddings = model_embed(audio_16k)
+
+    return activations, embeddings
+
+
+def _get_musicnn_embeddings(audio_16k: np.ndarray, models_dir: str):
+    """Extract MusiCNN tag activations and embeddings."""
+    musicnn_path = os.path.join(models_dir, "musicnn", "msd-musicnn-1.pb")
+    if not os.path.exists(musicnn_path):
+        musicnn_path = os.path.join(models_dir, "msd-musicnn-1.pb")
+
+    if not os.path.exists(musicnn_path) or not hasattr(es, 'TensorflowPredictMusiCNN'):
+        return None, None
+
+    model_tags = es.TensorflowPredictMusiCNN(
+        graphFilename=musicnn_path, output="model/Sigmoid"
+    )
+    tag_activations = model_tags(audio_16k)
+
+    model_embed = es.TensorflowPredictMusiCNN(
+        graphFilename=musicnn_path, output="model/dense/BiasAdd"
+    )
+    embeddings = model_embed(audio_16k)
+
+    return tag_activations, embeddings
+
+
+def _run_classification_head(embeddings, model_path: str, input_name: str = "flatten_in_input",
+                             output_name: str = "dense_out") -> Optional[np.ndarray]:
+    """Run a TensorflowPredict2D classification head on embeddings."""
+    if embeddings is None or not os.path.exists(model_path):
+        return None
+    if not hasattr(es, 'TensorflowPredict2D'):
+        return None
+    try:
+        model = es.TensorflowPredict2D(
+            graphFilename=model_path, input=input_name, output=output_name
+        )
+        return model(embeddings)
+    except Exception as e:
+        print(f"Classification head failed ({model_path}): {e}")
+        return None
+
+
+def _binary_classification(embeddings, model_path: str, pos_label: str, neg_label: str,
+                           input_name: str = "flatten_in_input",
+                           output_name: str = "dense_out") -> Optional[Dict[str, Any]]:
+    """Run a binary classification head and return {label, confidence}."""
+    preds = _run_classification_head(embeddings, model_path, input_name, output_name)
+    if preds is None:
+        return None
+    mean_pred = float(np.mean(preds))
+    if mean_pred >= 0.5:
+        return {"label": pos_label, "confidence": mean_pred}
+    else:
+        return {"label": neg_label, "confidence": 1.0 - mean_pred}
+
+
+# ---------------------------------------------------------------------------
+# Classification logic (supports selectable features)
+# ---------------------------------------------------------------------------
+
+def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100,
+                                 features: Optional[Set[str]] = None) -> Dict[str, Any]:
     """
     Classification using Essentia TensorFlow models.
+    `features` controls which classification heads to run. None or empty = all.
     """
+    if not features:
+        features = ALL_CLASSIFICATION_FEATURES
+
     models_dir = os.environ.get("ESSENTIA_MODELS_PATH", "/app/models")
-    
-    # Initialize results
-    genres = {"label": "Unknown", "confidence": 0.0, "all_scores": {}}
-    moods = {"label": "Unknown", "confidence": 0.0, "all_scores": {}}
-    tags = []
-    
-    # 1. Resample to 16kHz for classification models
-    # Most Essentia TF models work at 16kHz
+    heads_dir = os.path.join(models_dir, "classification_heads")
+    result: Dict[str, Any] = {}
+
+    # Resample once
     try:
         resample = es.Resample(inputSampleRate=sample_rate, outputSampleRate=16000, quality=0)
         audio_16k = resample(audio)
     except Exception as e:
         print(f"Resampling failed: {e}")
-        audio_16k = audio # Fallback, though likely to fail models
-    
-    from services.labels import GENRE_LABELS, TAG_LABELS
+        audio_16k = audio
 
-    # 2. Genre Classification (EffNetDiscogs)
-    # -------------------------------------------------------------------------
-    try:
-        genre_model_path = os.path.join(models_dir, "effnetdiscogs", "effnetdiscogs-bs64-1.pb")
-        if not os.path.exists(genre_model_path):
-             genre_model_path = os.path.join(models_dir, "effnetdiscogs-bs64-1.pb")
+    from services.labels import GENRE_LABELS, TAG_LABELS, INSTRUMENT_LABELS
 
-        if os.path.exists(genre_model_path):
-            if hasattr(es, 'TensorflowPredictEffNetDiscogs'):
-                model_genre = es.TensorflowPredictEffNetDiscogs(graphFilename=genre_model_path, output="PartitionedCall:1")
-                activations = model_genre(audio_16k)
-                
-                mean_activations = np.mean(activations, axis=0)
-                if len(mean_activations) == len(GENRE_LABELS):
-                    top_idx = int(np.argmax(mean_activations))
-                    genres["label"] = GENRE_LABELS[top_idx]
-                    genres["confidence"] = float(mean_activations[top_idx])
-                    
-                    top_5_indices = np.argsort(mean_activations)[-5:][::-1]
-                    for idx in top_5_indices:
-                        genres["all_scores"][GENRE_LABELS[idx]] = float(mean_activations[idx])
-            else:
-                 # Fallback to generic predictor if available
-                 if hasattr(es, 'TensorflowPredict'):
-                      print("Attempting fallback with generic TensorflowPredict for Genre...")
-                      # Preprocessing: audio -> (handled by EffNetDiscogs usually but here we need to be careful)
-                      # EffNetDiscogs expects [batch, 128, 96] mels? No, it takes audio usually.
-                      # Actually, many wrappers take audio. TensorflowPredict takes the raw input nodes.
-                      # For now, let's keep the label informative.
-                      genres["label"] = "Unavailable (Missing Wrapper)"
-                 else:
-                      genres["label"] = "Unavailable (No TF Support)"
-    except Exception as e:
-        print(f"Genre analysis failed: {e}")
+    # Extract embeddings only when needed
+    need_effnet = features & {"genre", "danceability", "approachability", "engagement",
+                              "acoustic_electronic", "bright_dark", "instrument", "tonal_atonal"}
+    need_musicnn = features & {"mood", "tags"}
 
-    # 3. Tags & Mood (MusiCNN + Chain)
-    # -------------------------------------------------------------------------
-    try:
-        # Load Tagging/Embedding Model (MusiCNN)
-        musicnn_path = os.path.join(models_dir, "musicnn", "msd-musicnn-1.pb")
-        if not os.path.exists(musicnn_path):
-             musicnn_path = os.path.join(models_dir, "msd-musicnn-1.pb")
-             
-        if os.path.exists(musicnn_path):
-            # Try specialized wrapper first
-            if hasattr(es, 'TensorflowPredictMusiCNN'):
-                model_musicnn = es.TensorflowPredictMusiCNN(graphFilename=musicnn_path, output="model/Sigmoid")
-                audio_input = audio_16k
-            elif hasattr(es, 'TensorflowPredict'):
-                print("Using generic TensorflowPredict for MusiCNN...")
-                # Generic fallback logic here. 
-                # For safety, if wrapper is missing, we might skip to avoid complex preprocessing errors 
-                # unless we are sure about input/output nodes.
-                # Let's ensure we return 'Unavailable (Missing Wrapper)' safely.
-                model_musicnn = None
-                moods["label"] = "Unavailable (Missing Wrapper)"
-            else:
-                model_musicnn = None
+    effnet_activations, effnet_embeddings = (None, None)
+    musicnn_activations, musicnn_embeddings = (None, None)
 
-            if model_musicnn:
-                # 3a. Tags
-                tags_activations = model_musicnn(audio_input)
-                mean_tags = np.mean(tags_activations, axis=0) # [50]
-                
-                # Get top tags (> 0.1 confidence)
-                for i, score in enumerate(mean_tags):
-                    if score > 0.15 and i < len(TAG_LABELS):
-                         tags.append(TAG_LABELS[i])
-                
-                # 3b. Mood (Requires Embeddings)
-                if hasattr(es, 'TensorflowPredictMusiCNN'):
-                    model_embeddings = es.TensorflowPredictMusiCNN(graphFilename=musicnn_path, output="model/dense/BiasAdd")
-                    embeddings = model_embeddings(audio_16k) # [frames, 200]
+    if need_effnet:
+        try:
+            effnet_activations, effnet_embeddings = _get_effnet_embeddings(audio_16k, models_dir)
+        except Exception as e:
+            print(f"EffNet embedding extraction failed: {e}")
+
+    if need_musicnn:
+        try:
+            musicnn_activations, musicnn_embeddings = _get_musicnn_embeddings(audio_16k, models_dir)
+        except Exception as e:
+            print(f"MusiCNN embedding extraction failed: {e}")
+
+    # --- Genre ---
+    if "genre" in features:
+        genres = {"label": "Unknown", "confidence": 0.0, "all_scores": {}}
+        if effnet_activations is not None:
+            mean_act = np.mean(effnet_activations, axis=0)
+            if len(mean_act) == len(GENRE_LABELS):
+                top_idx = int(np.argmax(mean_act))
+                genres["label"] = GENRE_LABELS[top_idx]
+                genres["confidence"] = float(mean_act[top_idx])
+                for idx in np.argsort(mean_act)[-5:][::-1]:
+                    genres["all_scores"][GENRE_LABELS[idx]] = float(mean_act[idx])
+        result["genres"] = genres
+
+    # --- Tags ---
+    if "tags" in features:
+        tags: List[str] = []
+        if musicnn_activations is not None:
+            mean_tags = np.mean(musicnn_activations, axis=0)
+            for i, score in enumerate(mean_tags):
+                if score > 0.15 and i < len(TAG_LABELS):
+                    tags.append(TAG_LABELS[i])
+        result["tags"] = tags
+
+    # --- Mood ---
+    if "mood" in features:
+        moods = {"label": "Unknown", "confidence": 0.0, "all_scores": {}}
+        if musicnn_embeddings is not None:
+            mood_model_path = os.path.join(heads_dir, "emomusic-msd-musicnn-1.pb")
+            mood_preds = _run_classification_head(musicnn_embeddings, mood_model_path)
+            if mood_preds is not None:
+                mean_mood = np.mean(mood_preds, axis=0)
+                valence = mean_mood[0]
+                arousal = mean_mood[1]
+                center = 5.0
+                if np.max(np.abs(mean_mood)) <= 1.5:
+                    center = 0.5
+                if valence >= center and arousal >= center:
+                    mood_label = "Happy"
+                elif valence >= center and arousal < center:
+                    mood_label = "Relaxed"
+                elif valence < center and arousal < center:
+                    mood_label = "Sad"
                 else:
-                    embeddings = None # Skip mood checks if no wrapper
-                
-                if embeddings is not None:
-                    # Load Mood Model (EmoMusic)
-                    mood_model_path = os.path.join(models_dir, "classification_heads", "emomusic-msd-musicnn-1.pb")
-                    if os.path.exists(mood_model_path) and hasattr(es, 'TensorflowPredict2D'):
-                         model_mood = es.TensorflowPredict2D(graphFilename=mood_model_path, 
-                                                             input="flatten_in_input", 
-                                                             output="dense_out")
-                         
-                         mood_preds = model_mood(embeddings)
-                         mean_mood = np.mean(mood_preds, axis=0) # [valence, arousal]
-                         
-                         valence = mean_mood[0]
-                         arousal = mean_mood[1]
-                         
-                         center = 5.0
-                         if np.max(np.abs(mean_mood)) <= 1.5:
-                             center = 0.5
-                             
-                         mood_label = "Happy"
-                         if valence >= center and arousal >= center: mood_label = "Happy"
-                         elif valence >= center and arousal < center: mood_label = "Relaxed"
-                         elif valence < center and arousal < center: mood_label = "Sad"
-                         elif valence < center and arousal >= center: mood_label = "Aggressive"
-                         
-                         moods["label"] = mood_label
-                         moods["confidence"] = 1.0 
-                         moods["all_scores"] = {"valence": float(valence), "arousal": float(arousal)}
-            else:
-                if moods["label"] == "Unknown":
-                    print("Warning: es.TensorflowPredictMusiCNN not available.")
-                    moods["label"] = "Unavailable"
-                tags = ["Unavailable"]
-    except Exception as e:
-        print(f"Mood/Tag analysis failed: {e}")
+                    mood_label = "Aggressive"
+                moods["label"] = mood_label
+                moods["confidence"] = 1.0
+                moods["all_scores"] = {"valence": float(valence), "arousal": float(arousal)}
+        result["moods"] = moods
 
-    return {
-        "genres": genres,
-        "moods": moods,
-        "tags": tags
-    }
+    # --- Danceability ---
+    if "danceability" in features:
+        path = os.path.join(heads_dir, "danceability-discogs-effnet-1.pb")
+        res = _binary_classification(effnet_embeddings, path, "Danceable", "Not Danceable")
+        result["danceability"] = res
+
+    # --- Approachability ---
+    if "approachability" in features:
+        path = os.path.join(heads_dir, "approachability_regression-discogs-effnet-1.pb")
+        preds = _run_classification_head(effnet_embeddings, path)
+        if preds is not None:
+            score = float(np.mean(preds))
+            label = "Approachable" if score >= 0.5 else "Not Approachable"
+            result["approachability"] = {"label": label, "confidence": score if score >= 0.5 else 1.0 - score}
+        else:
+            result["approachability"] = None
+
+    # --- Engagement ---
+    if "engagement" in features:
+        path = os.path.join(heads_dir, "engagement_regression-discogs-effnet-1.pb")
+        preds = _run_classification_head(effnet_embeddings, path)
+        if preds is not None:
+            score = float(np.mean(preds))
+            label = "Engaging" if score >= 0.5 else "Not Engaging"
+            result["engagement"] = {"label": label, "confidence": score if score >= 0.5 else 1.0 - score}
+        else:
+            result["engagement"] = None
+
+    # --- Acoustic/Electronic ---
+    if "acoustic_electronic" in features:
+        path = os.path.join(heads_dir, "nsynth_acoustic_electronic-discogs-effnet-1.pb")
+        res = _binary_classification(effnet_embeddings, path, "Electronic", "Acoustic")
+        result["acoustic_electronic"] = res
+
+    # --- Bright/Dark ---
+    if "bright_dark" in features:
+        path = os.path.join(heads_dir, "nsynth_bright_dark-discogs-effnet-1.pb")
+        res = _binary_classification(effnet_embeddings, path, "Bright", "Dark")
+        result["bright_dark"] = res
+
+    # --- Instrument ---
+    if "instrument" in features:
+        path = os.path.join(heads_dir, "mtg_jamendo_instrument-discogs-effnet-1.pb")
+        preds = _run_classification_head(effnet_embeddings, path)
+        if preds is not None:
+            mean_preds = np.mean(preds, axis=0)
+            instruments = []
+            for i, score in enumerate(mean_preds):
+                if score > 0.15 and i < len(INSTRUMENT_LABELS):
+                    instruments.append({"label": INSTRUMENT_LABELS[i], "confidence": float(score)})
+            instruments.sort(key=lambda x: x["confidence"], reverse=True)
+            result["instrument"] = instruments
+        else:
+            result["instrument"] = None
+
+    # --- Tonal/Atonal ---
+    if "tonal_atonal" in features:
+        path = os.path.join(heads_dir, "tonal_atonal-discogs-effnet-1.pb")
+        res = _binary_classification(effnet_embeddings, path, "Tonal", "Atonal")
+        result["tonal_atonal"] = res
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Vocal analysis
+# ---------------------------------------------------------------------------
+
+def analyze_vocals_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
+    """Detect vocal presence using voice_instrumental classification head with EffNet embeddings."""
+    models_dir = os.environ.get("ESSENTIA_MODELS_PATH", "/app/models")
+    heads_dir = os.path.join(models_dir, "classification_heads")
+
+    try:
+        resample = es.Resample(inputSampleRate=sample_rate, outputSampleRate=16000, quality=0)
+        audio_16k = resample(audio)
+    except Exception as e:
+        print(f"Resampling failed: {e}")
+        return {"is_vocal": False, "confidence": 0.0, "label": "Unknown"}
+
+    _, effnet_embeddings = _get_effnet_embeddings(audio_16k, models_dir)
+
+    path = os.path.join(heads_dir, "voice_instrumental-discogs-effnet-1.pb")
+    preds = _run_classification_head(effnet_embeddings, path)
+
+    if preds is not None:
+        score = float(np.mean(preds))
+        # Convention: higher score = voice
+        is_vocal = score >= 0.5
+        return {
+            "is_vocal": is_vocal,
+            "confidence": score if is_vocal else 1.0 - score,
+            "label": "Voice" if is_vocal else "Instrumental",
+        }
+
+    return {"is_vocal": False, "confidence": 0.0, "label": "Unknown"}
+
+
+# ---------------------------------------------------------------------------
+# Enhanced tonal analysis
+# ---------------------------------------------------------------------------
 
 def analyze_tonal_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
     """
-    Extract Key and Scale using KeyExtractor.
+    Extract Key/Scale via KeyExtractor, deep-learning tempo via TempoCNN,
+    and pitch via CREPE.
     """
-    # KeyExtractor logic
-    # It usually requires 'hpcd' or 'pcp' input, but 'KeyExtractor' is a composite algorithm 
-    # that usually takes audio or spectral peaks. 
-    # Standard: KeyExtractor(audio) -> key, scale, strength
-    
+    models_dir = os.environ.get("ESSENTIA_MODELS_PATH", "/app/models")
+
+    # --- Key / Scale (existing) ---
     try:
-        # Check available algorithms or use standard configuration
-        # Ideally: KeyExtractor requires spectogram or specific profile
-        # Simpler: KeyExtractor handles audio directly in some versions, but 
-        # usually we need: Audio -> FrameCutter -> Windowing -> Spectrum -> SpectralPeaks -> HPCP -> Key
-        # Or just use the wrapper 'KeyExtractor' if available for audio (streaming)
-        # But commonly in standard mode:
-        
-        # Let's use the standard chain for safety:
-        # 1. HPCP
-        # 2. Key
-        
-        # Or check if KeyExtractor accepts audio
         key_extractor = es.KeyExtractor()
-        # Some versions return 5 values, others return 3. 
-        # Log said it got 3: (key, scale, strength)
         results = key_extractor(audio)
         key = results[0]
         scale = results[1]
         strength = float(results[2])
-        
-        return {
-            "key": key,
-            "scale": scale,
-            "strength": float(strength)
-        }
     except Exception as e:
         print(f"Key analysis failed: {e}")
-        return {
-            "key": "Unknown",
-            "scale": "Unknown",
-            "strength": 0.0
-        }
+        key, scale, strength = "Unknown", "Unknown", 0.0
+
+    # --- TempoCNN ---
+    tempo_cnn_value = None
+    try:
+        resample = es.Resample(inputSampleRate=sample_rate, outputSampleRate=11025, quality=0)
+        audio_11k = resample(audio)
+
+        tempo_model_path = os.path.join(models_dir, "tempocnn", "deeptemp-k16-3.pb")
+        if not os.path.exists(tempo_model_path):
+            tempo_model_path = os.path.join(models_dir, "tempocnn", "deepsquare-k16-3.pb")
+
+        if os.path.exists(tempo_model_path) and hasattr(es, 'TensorflowPredictTempoCNN'):
+            model_tempo = es.TensorflowPredictTempoCNN(graphFilename=tempo_model_path)
+            tempo_preds = model_tempo(audio_11k)
+            # TempoCNN returns a global BPM vector; pick the argmax bin
+            mean_preds = np.mean(tempo_preds, axis=0)
+            # Bins map to 30-286 BPM (256 bins)
+            bpm_range = np.linspace(30, 286, len(mean_preds))
+            tempo_cnn_value = float(bpm_range[int(np.argmax(mean_preds))])
+    except Exception as e:
+        print(f"TempoCNN analysis failed: {e}")
+
+    # --- CREPE pitch ---
+    pitch_data = None
+    try:
+        crepe_model_path = os.path.join(models_dir, "crepe", "crepe-full-1.pb")
+        if not os.path.exists(crepe_model_path):
+            crepe_model_path = os.path.join(models_dir, "crepe", "crepe-tiny-1.pb")
+
+        resample_16k = es.Resample(inputSampleRate=sample_rate, outputSampleRate=16000, quality=0)
+        audio_16k = resample_16k(audio)
+
+        if os.path.exists(crepe_model_path) and hasattr(es, 'TensorflowPredictCREPE'):
+            # TensorflowPredictCREPE returns (pitch_values, confidence_values)
+            model_crepe = es.TensorflowPredictCREPE(graphFilename=crepe_model_path)
+            crepe_out = model_crepe(audio_16k)
+            # crepe_out is typically (time, frequency, confidence) or just activations
+            if isinstance(crepe_out, tuple) and len(crepe_out) >= 2:
+                frequencies = crepe_out[0]
+                confidences = crepe_out[1]
+            else:
+                # Single array output: interpret as frequency activations
+                frequencies = crepe_out
+                confidences = np.ones(len(frequencies)) if hasattr(frequencies, '__len__') else np.array([1.0])
+
+            if hasattr(frequencies, '__len__') and len(frequencies) > 0:
+                # Filter out unvoiced (low confidence) frames
+                freq_arr = np.array(frequencies)
+                conf_arr = np.array(confidences) if hasattr(confidences, '__len__') else np.array([float(confidences)])
+                voiced_mask = conf_arr > 0.3
+                if np.any(voiced_mask):
+                    mean_freq = float(np.mean(freq_arr[voiced_mask]))
+                    mean_conf = float(np.mean(conf_arr[voiced_mask]))
+                else:
+                    mean_freq = float(np.mean(freq_arr))
+                    mean_conf = 0.0
+                pitch_data = {"mean_frequency": mean_freq, "confidence": mean_conf}
+    except Exception as e:
+        print(f"CREPE pitch analysis failed: {e}")
+
+    return {
+        "key": key,
+        "scale": scale,
+        "strength": strength,
+        "tempo_cnn": tempo_cnn_value,
+        "pitch": pitch_data,
+    }

@@ -85,3 +85,13 @@ TAG_LABELS = [
     "experimental", "female vocalist", "guitar", "Hip-Hop", "70s", "party", "country", "easy listening", "sexy",
     "catchy", "funk", "electro", "heavy metal", "Progressive rock", "60s", "rnb", "indie pop", "sad", "House", "happy"
 ]
+
+# 40 Instrument Labels (MTG-Jamendo Instrument)
+INSTRUMENT_LABELS = [
+    "accordion", "acousticguitar", "bass", "beat", "bell", "bongo", "brass",
+    "cello", "clarinet", "classicalguitar", "computer", "doublebass", "drummachine",
+    "drums", "electricguitar", "electricpiano", "flute", "guitar", "harmonica",
+    "harp", "horn", "keyboard", "oboe", "orchestra", "organ", "pad", "percussion",
+    "piano", "pipeorgan", "rhodes", "sampler", "saxophone", "strings", "synthesizer",
+    "trombone", "trumpet", "ukulele", "viola", "violin", "voice"
+]

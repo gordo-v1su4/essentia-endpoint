@@ -3,7 +3,7 @@
   "info": {
     "title": "Audio Analysis API",
     "description": "High-quality music analysis using Essentia C++ core via Python.",
-    "version": "2.0.0"
+    "version": "3.0.0"
   },
   "paths": {
     "/analyze/rhythm": {
@@ -16,7 +16,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_analyze_rhythm_analyze_rhythm_post"
+                "$ref": "#/components/schemas/Body_file_upload"
               }
             }
           },
@@ -64,7 +64,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_analyze_structure_analyze_structure_post"
+                "$ref": "#/components/schemas/Body_file_upload"
               }
             }
           },
@@ -106,13 +106,26 @@
       "post": {
         "tags": ["Analysis"],
         "summary": "Analyze Classification",
-        "description": "Analyze Genre, Mood, and Tags using Essentia TensorFlow models.",
+        "description": "Analyze Genre, Mood, Tags, and additional classification features using Essentia TensorFlow models.",
         "operationId": "analyze_classification_analyze_classification_post",
+        "parameters": [
+          {
+            "name": "features",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "nullable": true,
+              "title": "Features"
+            },
+            "description": "Comma-separated list of features to analyze. Available: genre, mood, tags, danceability, approachability, engagement, acoustic_electronic, bright_dark, instrument, tonal_atonal. Default: all."
+          }
+        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_analyze_classification_analyze_classification_post"
+                "$ref": "#/components/schemas/Body_file_upload"
               }
             }
           },
@@ -125,6 +138,105 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClassificationAnalysis"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid feature name(s)"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/analyze/tonal": {
+      "post": {
+        "tags": ["Analysis"],
+        "summary": "Analyze Tonal",
+        "description": "Extract key, scale, deep-learning tempo (TempoCNN), and pitch (CREPE).",
+        "operationId": "analyze_tonal_analyze_tonal_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_file_upload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnhancedTonalAnalysis"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/analyze/vocals": {
+      "post": {
+        "tags": ["Analysis"],
+        "summary": "Analyze Vocals",
+        "description": "Detect whether audio contains vocals or is instrumental.",
+        "operationId": "analyze_vocals_analyze_vocals_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_file_upload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VocalAnalysis"
                 }
               }
             }
@@ -154,13 +266,13 @@
       "post": {
         "tags": ["Analysis"],
         "summary": "Analyze Full",
-        "description": "Perform full rhythm, structural, and classification analysis.",
+        "description": "Perform full rhythm, structural, classification, tonal, and vocal analysis.",
         "operationId": "analyze_full_analyze_full_post",
         "requestBody": {
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_analyze_full_analyze_full_post"
+                "$ref": "#/components/schemas/Body_file_upload"
               }
             }
           },
@@ -229,7 +341,7 @@
   },
   "components": {
     "schemas": {
-      "Body_analyze_rhythm_analyze_rhythm_post": {
+      "Body_file_upload": {
         "type": "object",
         "required": ["file"],
         "properties": {
@@ -240,36 +352,24 @@
           }
         }
       },
-      "Body_analyze_structure_analyze_structure_post": {
+      "EnergyData": {
         "type": "object",
-        "required": ["file"],
+        "required": ["mean", "std", "curve"],
         "properties": {
-          "file": {
-            "type": "string",
-            "format": "binary",
-            "title": "File"
-          }
-        }
-      },
-      "Body_analyze_classification_analyze_classification_post": {
-        "type": "object",
-        "required": ["file"],
-        "properties": {
-          "file": {
-            "type": "string",
-            "format": "binary",
-            "title": "File"
-          }
-        }
-      },
-      "Body_analyze_full_analyze_full_post": {
-        "type": "object",
-        "required": ["file"],
-        "properties": {
-          "file": {
-            "type": "string",
-            "format": "binary",
-            "title": "File"
+          "mean": {
+            "type": "number",
+            "title": "Mean"
+          },
+          "std": {
+            "type": "number",
+            "title": "Std"
+          },
+          "curve": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "title": "Curve"
           }
         }
       },
@@ -304,21 +404,33 @@
             "title": "Duration"
           },
           "energy": {
-            "type": "object",
-            "properties": {
-              "mean": {
-                "type": "number"
-              },
-              "std": {
-                "type": "number"
-              },
-              "curve": {
-                "type": "array",
-                "items": {
-                  "type": "number"
-                }
-              }
-            }
+            "$ref": "#/components/schemas/EnergyData"
+          }
+        }
+      },
+      "Section": {
+        "type": "object",
+        "required": ["start", "end", "label", "duration", "energy"],
+        "properties": {
+          "start": {
+            "type": "number",
+            "title": "Start"
+          },
+          "end": {
+            "type": "number",
+            "title": "End"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "duration": {
+            "type": "number",
+            "title": "Duration"
+          },
+          "energy": {
+            "type": "number",
+            "title": "Energy"
           }
         }
       },
@@ -329,75 +441,160 @@
           "sections": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "start": {
-                  "type": "number"
-                },
-                "end": {
-                  "type": "number"
-                },
-                "label": {
-                  "type": "string"
-                },
-                "duration": {
-                  "type": "number"
-                },
-                "energy": {
-                  "type": "number"
-                }
-              }
-            }
+              "$ref": "#/components/schemas/Section"
+            },
+            "title": "Sections"
           },
           "boundaries": {
             "type": "array",
             "items": {
               "type": "number"
-            }
+            },
+            "title": "Boundaries"
+          }
+        }
+      },
+      "ClassificationResult": {
+        "type": "object",
+        "required": ["label", "confidence", "all_scores"],
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "all_scores": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "All Scores"
+          }
+        }
+      },
+      "ClassificationFeature": {
+        "type": "object",
+        "required": ["label", "confidence"],
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
           }
         }
       },
       "ClassificationAnalysis": {
         "type": "object",
-        "required": ["genres", "moods", "tags"],
         "properties": {
           "genres": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string"
-              },
-              "confidence": {
-                "type": "number"
-              },
-              "all_scores": {
-                "type": "object"
-              }
-            }
+            "anyOf": [
+              { "$ref": "#/components/schemas/ClassificationResult" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Genres"
           },
           "moods": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string"
-              },
-              "confidence": {
-                "type": "number"
-              },
-              "all_scores": {
-                "type": "object"
-              }
-            }
+            "anyOf": [
+              { "$ref": "#/components/schemas/ClassificationResult" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Moods"
           },
           "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "anyOf": [
+              {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Tags"
+          },
+          "danceability": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/ClassificationFeature" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Danceability"
+          },
+          "approachability": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/ClassificationFeature" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Approachability"
+          },
+          "engagement": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/ClassificationFeature" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Engagement"
+          },
+          "acoustic_electronic": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/ClassificationFeature" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Acoustic/Electronic"
+          },
+          "bright_dark": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/ClassificationFeature" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Bright/Dark"
+          },
+          "instrument": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/ClassificationFeature" }
+              },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Instrument"
+          },
+          "tonal_atonal": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/ClassificationFeature" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Tonal/Atonal"
           }
         }
       },
-      "TonalAnalysis": {
+      "PitchData": {
+        "type": "object",
+        "required": ["mean_frequency", "confidence"],
+        "properties": {
+          "mean_frequency": {
+            "type": "number",
+            "title": "Mean Frequency"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          }
+        }
+      },
+      "EnhancedTonalAnalysis": {
         "type": "object",
         "required": ["key", "scale", "strength"],
         "properties": {
@@ -412,6 +609,40 @@
           "strength": {
             "type": "number",
             "title": "Strength"
+          },
+          "tempo_cnn": {
+            "anyOf": [
+              { "type": "number" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Tempo CNN"
+          },
+          "pitch": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/PitchData" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Pitch"
+          }
+        }
+      },
+      "VocalAnalysis": {
+        "type": "object",
+        "required": ["is_vocal", "confidence", "label"],
+        "properties": {
+          "is_vocal": {
+            "type": "boolean",
+            "title": "Is Vocal"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
           }
         }
       },
@@ -420,37 +651,60 @@
         "required": ["bpm", "beats", "confidence", "onsets", "duration", "energy", "structure"],
         "properties": {
           "bpm": {
-            "type": "number"
+            "type": "number",
+            "title": "BPM"
           },
           "beats": {
             "type": "array",
             "items": {
               "type": "number"
-            }
+            },
+            "title": "Beats"
           },
           "confidence": {
-            "type": "number"
+            "type": "number",
+            "title": "Confidence"
           },
           "onsets": {
             "type": "array",
             "items": {
               "type": "number"
-            }
+            },
+            "title": "Onsets"
           },
           "duration": {
-            "type": "number"
+            "type": "number",
+            "title": "Duration"
           },
           "energy": {
-            "type": "object"
+            "$ref": "#/components/schemas/EnergyData"
           },
           "structure": {
             "$ref": "#/components/schemas/StructureAnalysis"
           },
           "classification": {
-            "$ref": "#/components/schemas/ClassificationAnalysis"
+            "anyOf": [
+              { "$ref": "#/components/schemas/ClassificationAnalysis" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Classification"
           },
           "tonal": {
-            "$ref": "#/components/schemas/TonalAnalysis"
+            "anyOf": [
+              { "$ref": "#/components/schemas/EnhancedTonalAnalysis" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Tonal"
+          },
+          "vocals": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/VocalAnalysis" },
+              { "type": "null" }
+            ],
+            "default": null,
+            "title": "Vocals"
           }
         }
       },
@@ -460,8 +714,33 @@
           "detail": {
             "type": "array",
             "items": {
-              "type": "object"
-            }
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail"
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "required": ["loc", "msg", "type"],
+        "properties": {
+          "loc": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                { "type": "string" },
+                { "type": "integer" }
+              ]
+            },
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
           }
         }
       }

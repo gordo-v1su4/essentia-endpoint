@@ -30,17 +30,45 @@ class ClassificationResult(BaseModel):
     confidence: float
     all_scores: Dict[str, float]
 
+class ClassificationFeature(BaseModel):
+    label: str
+    confidence: float
+
 class ClassificationAnalysis(BaseModel):
-    genres: ClassificationResult
-    moods: ClassificationResult
-    tags: List[str]
+    genres: Optional[ClassificationResult] = None
+    moods: Optional[ClassificationResult] = None
+    tags: Optional[List[str]] = None
+    danceability: Optional[ClassificationFeature] = None
+    approachability: Optional[ClassificationFeature] = None
+    engagement: Optional[ClassificationFeature] = None
+    acoustic_electronic: Optional[ClassificationFeature] = None
+    bright_dark: Optional[ClassificationFeature] = None
+    instrument: Optional[List[ClassificationFeature]] = None
+    tonal_atonal: Optional[ClassificationFeature] = None
 
 class TonalAnalysis(BaseModel):
     key: str
     scale: str
     strength: float
 
+class PitchData(BaseModel):
+    mean_frequency: float
+    confidence: float
+
+class EnhancedTonalAnalysis(BaseModel):
+    key: str
+    scale: str
+    strength: float
+    tempo_cnn: Optional[float] = None
+    pitch: Optional[PitchData] = None
+
+class VocalAnalysis(BaseModel):
+    is_vocal: bool
+    confidence: float
+    label: str
+
 class FullAnalysis(RhythmAnalysis):
     structure: StructureAnalysis
     classification: Optional[ClassificationAnalysis] = None
-    tonal: Optional[TonalAnalysis] = None
+    tonal: Optional[EnhancedTonalAnalysis] = None
+    vocals: Optional[VocalAnalysis] = None
