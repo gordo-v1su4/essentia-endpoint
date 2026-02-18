@@ -1,39 +1,25 @@
 # Essentia Audio Analysis API
 
-FastAPI server for comprehensive audio analysis using Essentia. Provides rhythm analysis, structural segmentation, classification (genre/mood/tags), and tonal analysis.
+FastAPI server for comprehensive audio analysis using Essentia. Provides rhythm analysis, structural segmentation, classification (genre/mood/tags + selectable features), vocal detection, and enhanced tonal analysis with deep-learning tempo and pitch.
 
-## Documentation
-
-Additional documentation is available in the [`docs/`](docs/) folder:
-- [Energy Curve Updates](docs/ENERGY_CURVE_UPDATE.md) - Speed ramping and energy-based features
-- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment instructions
-- [Coolify Setup](docs/COOLIFY.md) - Coolify-specific configuration
-- [Models Setup](docs/MODELS_SETUP.md) - TensorFlow models configuration
-- [CORS Configuration](docs/CORS_FIX.md) - CORS troubleshooting
-- [OpenAPI Schema](docs/openapi.json) - API specification
+**Version:** 3.0.0
 
 ## Quick Start
 
-### Run Locally with Docker (recommended)
+### Docker (recommended)
 
 ```bash
-# From project root
 docker-compose up -d --build
 ```
 
-API at **http://localhost:7000**. No venv or Python install needed.
+API at **http://localhost:7000**. Models auto-download on first startup from `essentia.upf.edu`.
 
 ```bash
-# View logs
-docker-compose logs -f
-
-# Stop
-docker-compose down
+docker-compose logs -f   # View logs
+docker-compose down      # Stop
 ```
 
-### Local Development (uv, for editing code)
-
-When iterating on code without rebuilding the image:
+### Local Development (uv)
 
 ```bash
 uv venv
@@ -43,268 +29,185 @@ uv run uvicorn main:app --reload --port 8000
 
 API at **http://localhost:8000**.
 
-### Docker (single container, no Compose)
-
-```bash
-docker build -t essentia-api .
-docker run -p 7000:8000 -v ./models:/app/models essentia-api
-```
-
-## Ports
-
-| Run mode | Host port | Notes |
-|----------|-----------|-------|
-| **Docker** (local) | `7000` | Recommended; `docker-compose up -d` |
-| **uv** (dev) | `8000` | For code editing with hot reload |
-| **Production** (Coolify) | 80/443 | Reverse proxy handles it |
-
-The API always runs on port **8000** inside the container. Docker Compose maps `7000` on your host to `8000` in the container by default (avoids conflicts with other services). Use `http://localhost:7000` when running via Docker Compose.
-
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `API_HOST` | `0.0.0.0` | Host to bind the server to |
-| `API_PORT` | `8000` | Port inside container |
-| `EXTERNAL_PORT` | `7000` | Host port exposed by Docker Compose |
-| `CORS_ORIGINS` | `*` | Comma-separated list of allowed CORS origins |
-| `API_KEYS` | (required) | Comma-separated list of valid API keys |
-
 ## Authentication
 
-All analysis endpoints require API key authentication. Include your API key in the `X-API-Key` header with every request.
+All analysis endpoints require an API key via the `X-API-Key` header.
 
-### Getting an API Key
-
-Contact the API administrator to receive your API key.
-
-### Using Your API Key
-
-Include the `X-API-Key` header in all requests to protected endpoints.
-
-**cURL Example:**
 ```bash
 curl -X POST "https://essentia.v1su4.dev/analyze/rhythm" \
   -H "X-API-Key: your_api_key_here" \
   -F "file=@audio.mp3"
 ```
 
-**Python Example:**
-```python
-import requests
+## API Endpoints
 
-headers = {"X-API-Key": "your_api_key_here"}
-files = {"file": open("audio.mp3", "rb")}
+### `POST /analyze/rhythm`
 
-response = requests.post(
-    "https://essentia.v1su4.dev/analyze/rhythm",
-    headers=headers,
-    files=files
-)
+BPM, beats, onsets, and high-resolution energy curve.
 
-print(response.json())
-```
-
-**JavaScript Example:**
-```javascript
-const formData = new FormData();
-formData.append('file', audioFile);
-
-fetch('https://essentia.v1su4.dev/analyze/rhythm', {
-  method: 'POST',
-  headers: {
-    'X-API-Key': 'your_api_key_here'
-  },
-  body: formData
-})
-.then(response => response.json())
-.then(data => console.log(data));
-```
-
-### Protected vs Public Endpoints
-
-**Protected (require API key):**
-- `POST /analyze/rhythm`
-- `POST /analyze/structure`
-- `POST /analyze/classification`
-- `POST /analyze/full`
-
-**Public (no authentication required):**
-- `GET /health` - Health check for monitoring systems
-- `GET /docs` - API documentation (Swagger UI)
-- `GET /redoc` - API documentation (ReDoc)
-
-## API Documentation
-
-### Interactive Documentation
-
-- **Swagger UI**: `http://localhost:8000/docs` (uv run) or `http://localhost:7000/docs` (Docker Compose) or https://essentia.v1su4.dev/docs (production)
-- **ReDoc**: `http://localhost:8000/redoc` (uv run) or `http://localhost:7000/redoc` (Docker Compose) or https://essentia.v1su4.dev/redoc (production)
-
-### API Endpoints
-
-#### `POST /analyze/rhythm`
-
-Extract BPM, beats, confidence, onsets, and high-resolution energy curve.
-
-**Response:**
 ```json
 {
-  "bpm": 120.5,
-  "beats": [0.0, 0.5, 1.0, ...],
+  "bpm": 128.0,
+  "beats": [0.0, 0.469, 0.938],
   "confidence": 0.95,
-  "onsets": [0.1, 0.3, 0.6, ...],
+  "onsets": [0.1, 0.3, 0.6],
   "duration": 180.5,
   "energy": {
     "mean": 0.45,
     "std": 0.12,
-    "curve": [0.0, 0.1, 0.3, 0.5, ...]
+    "curve": [0.0, 0.1, 0.3, 0.5]
   }
 }
 ```
 
-#### `POST /analyze/structure`
+### `POST /analyze/structure`
 
-Segment audio into sections (intro, verse, chorus, etc.) with energy values.
+Section boundaries with labels (intro, verse, chorus, bridge, outro).
 
-**Response:**
 ```json
 {
   "sections": [
-    {
-      "start": 0.0,
-      "end": 15.2,
-      "label": "intro",
-      "duration": 15.2,
-      "energy": 0.12
-    }
-  ]
+    {"start": 0.0, "end": 15.2, "label": "intro", "duration": 15.2, "energy": 0.12},
+    {"start": 15.2, "end": 62.8, "label": "verse", "duration": 47.6, "energy": 0.34}
+  ],
+  "boundaries": [0.0, 15.2, 62.8, 180.5]
 }
 ```
 
-#### `POST /analyze/classification`
+### `POST /analyze/classification`
 
-Analyze genre, mood, and tags using Essentia TensorFlow models.
+Genre, mood, tags, and selectable classification features.
 
-**Response:**
+**Query parameter:** `?features=genre,mood,danceability` (comma-separated, default: all)
+
+**Available features:** `genre`, `mood`, `tags`, `danceability`, `approachability`, `engagement`, `acoustic_electronic`, `bright_dark`, `instrument`, `tonal_atonal`
+
 ```json
 {
-  "genre": {"electronic": 0.8, "rock": 0.15, ...},
-  "mood": {"energetic": 0.9, "happy": 0.7, ...},
-  "tags": {"instrumental": 0.95, "dance": 0.8, ...}
+  "genres": {"label": "Electronic---Tech House", "confidence": 0.82, "all_scores": {}},
+  "moods": {"label": "Happy", "confidence": 1.0, "all_scores": {"valence": 6.2, "arousal": 5.8}},
+  "tags": ["electronic", "dance", "House"],
+  "danceability": {"label": "Danceable", "confidence": 0.91},
+  "approachability": {"label": "Approachable", "confidence": 0.73},
+  "engagement": {"label": "Engaging", "confidence": 0.68},
+  "acoustic_electronic": {"label": "Electronic", "confidence": 0.95},
+  "bright_dark": {"label": "Bright", "confidence": 0.77},
+  "instrument": [
+    {"label": "synthesizer", "confidence": 0.88},
+    {"label": "drums", "confidence": 0.72}
+  ],
+  "tonal_atonal": {"label": "Tonal", "confidence": 0.85}
 }
 ```
 
-#### `POST /analyze/full`
+### `POST /analyze/tonal`
 
-Perform complete analysis (rhythm, structure, classification, and tonal).
+Key, scale, deep-learning tempo (TempoCNN), and pitch detection (CREPE).
 
-**Response:** Combined data from all analysis types.
-
-#### `GET /health`
-
-Health check endpoint.
-
-**Response:**
 ```json
 {
-  "status": "ok",
-  "version": "2.0.0"
+  "key": "A",
+  "scale": "minor",
+  "strength": 0.72,
+  "tempo_cnn": 127.5,
+  "pitch": {"mean_frequency": 440.0, "confidence": 0.85}
 }
 ```
 
-## Deployment to Remote Server
+### `POST /analyze/vocals`
 
-### Option 1: Docker on Remote Server
+Voice/instrumental detection with continuous 0-1 score.
 
-1. **Copy files to server:**
-   ```bash
-   scp -r . user@server:/path/to/deploy/essentia-endpoint
-   ```
+```json
+{
+  "vocal_presence": 0.82,
+  "label": "Voice"
+}
 
-2. **SSH into server:**
-   ```bash
-   ssh user@server
-   cd /path/to/deploy/essentia-endpoint
-   ```
+```
 
-3. **Build and run:**
-   ```bash
-   docker-compose up -d --build
-   ```
+`vocal_presence`: 0.0 = instrumental, 1.0 = vocals.
 
-4. **Update frontend environment:**
-   - Set `VITE_ESSENTIA_API_URL=https://essentia.v1su4.dev` in your frontend `.env` file
+### `POST /analyze/full`
 
-### Option 2: Docker Hub / Container Registry
+All of the above combined in a single response.
 
-1. **Build and push** (use `build-push.ps1` on Windows or `build-push.sh` on Mac/Linux):
-   ```powershell
-   # Windows (default: gordov1su4)
-   .\build-push.ps1
-   ```
-   ```bash
-   # Mac/Linux (default: gordov1su4)
-   ./build-push.sh
-   ```
-   Or manually:
-   ```bash
-   docker build -t gordov1su4/essentia-api:$(git rev-parse --short HEAD) -t gordov1su4/essentia-api:latest .
-   docker push gordov1su4/essentia-api:$(git rev-parse --short HEAD)
-   docker push gordov1su4/essentia-api:latest
-   ```
+### `GET /health`
 
-2. **Pull and run on server:**
-   ```bash
-   docker pull gordov1su4/essentia-api:latest
-   docker run -d -p 8000:8000 -v ./models:/app/models \
-     -e CORS_ORIGINS=https://yourdomain.com \
-     gordov1su4/essentia-api:latest
-   ```
+```json
+{"status": "ok", "version": "3.0.0"}
+```
 
-3. **Use registry image in Compose** (instead of local build):
-   ```bash
-   # .env
-   ESSENTIA_IMAGE=gordov1su4/essentia-api:latest
+### Protected vs Public
 
-   # On deployment host
-   docker-compose pull
-   docker-compose up -d
-   ```
+| Protected (API key required) | Public |
+|-----|--------|
+| `POST /analyze/rhythm` | `GET /health` |
+| `POST /analyze/structure` | `GET /docs` (Swagger UI) |
+| `POST /analyze/classification` | `GET /redoc` |
+| `POST /analyze/tonal` | |
+| `POST /analyze/vocals` | |
+| `POST /analyze/full` | |
 
-### Option 3: Cloud Platform (AWS, GCP, Azure)
+## TensorFlow Models
 
-- **AWS ECS/Fargate**: Use the Dockerfile with ECS task definitions
-- **Google Cloud Run**: Deploy directly from Dockerfile
-- **Azure Container Instances**: Use docker-compose or Azure CLI
-- **DigitalOcean App Platform**: Connect GitHub repo, auto-deploy on push
+Models auto-download on first startup from `essentia.upf.edu/models/`. Stored in `/app/models` (Docker volume).
 
-## Production Considerations
+| Model | Wrapper | Purpose |
+|-------|---------|---------|
+| Discogs EffNet | `TensorflowPredictEffnetDiscogs` | Genre classification (400 labels) + embeddings |
+| MusiCNN | `TensorflowPredictMusiCNN` | Auto-tagging (50 labels) + embeddings |
+| Classification heads (9) | `TensorflowPredict2D` | Danceability, mood, vocals, etc. |
+| TempoCNN | `TensorflowPredictTempoCNN` | Deep-learning tempo estimation |
+| CREPE | `TensorflowPredictCREPE` | Pitch detection |
 
-1. **CORS Configuration**: Set `CORS_ORIGINS` to your actual frontend domain(s)
-2. **Reverse Proxy**: Use nginx/traefik for SSL termination and routing
-3. **Resource Limits**: Adjust CPU/memory in docker-compose.yml based on load
-4. **Health Checks**: Configure your orchestrator to use `/health` endpoint
-5. **Logging**: Add structured logging for production monitoring
+To force model re-download, delete the models volume and restart:
 
-## Troubleshooting
+```bash
+docker-compose down -v
+docker-compose up -d --build
+```
 
-### Essentia Installation Issues
+## Environment Variables
 
-If Essentia fails to install in Docker, you may need to:
-- Use a pre-built Essentia Docker image
-- Build Essentia from source in a multi-stage build
-- Use a different base image with Essentia pre-installed
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `API_KEYS` | (required) | Comma-separated valid API keys |
+| `API_PORT` | `8000` | Container port |
+| `EXTERNAL_PORT` | `7000` | Host port (docker-compose) |
+| `CORS_ORIGINS` | `*` | Comma-separated allowed origins |
+| `ESSENTIA_MODELS_PATH` | `/app/models` | TensorFlow models directory |
+| `TF_CPP_MIN_LOG_LEVEL` | `3` | Suppress TF logs |
 
-### CORS Errors
+## Architecture
 
-If you see CORS errors from the frontend:
-- Check that `CORS_ORIGINS` includes your frontend URL
-- Ensure the API is accessible from the frontend domain
-- Verify the API URL in frontend environment variables
+```
+main.py                  FastAPI app, endpoint definitions, CORS setup
+api/auth.py              API key auth (X-API-Key header)
+api/models.py            Pydantic response models
+services/analysis.py     Core analysis (rhythm, structure, classification, tonal, vocals)
+services/labels.py       Genre (400), tag (50), and instrument (40) label mappings
+download_models.sh       Downloads models from essentia.upf.edu
+entrypoint.sh            Auto-downloads models on first run, starts uvicorn
+docs/openapi.json        OpenAPI 3.1 schema
+```
 
-### Port Conflicts
+## Deployment
 
-- **Local dev (uv)**: Change port in uvicorn: `uvicorn main:app --reload --port 9000`
-- **Docker Compose**: Set `EXTERNAL_PORT=9000` in `.env` or `docker-compose.yml`
-- Update frontend `VITE_ESSENTIA_API_URL` or `API_BASE` in `app/index.html` accordingly
+### Docker Hub
+
+```bash
+./build-push.sh          # Linux/macOS
+./build-push.ps1         # Windows
+```
+
+### Cloud platforms
+
+Works with AWS ECS/Fargate, Google Cloud Run, Azure Container Instances, DigitalOcean App Platform, or Coolify.
+
+## Documentation
+
+- **Swagger UI**: `/docs`
+- **ReDoc**: `/redoc`
+- **OpenAPI schema**: [`docs/openapi.json`](docs/openapi.json)
+- Additional docs in [`docs/`](docs/)
