@@ -1,7 +1,7 @@
 # Silence TensorFlow GPU/NUMA logs before essentia (which loads TF)
 import os
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
-
+    
 import essentia.standard as es
 import numpy as np
 from typing import List, Dict, Any, Optional, Set
@@ -296,6 +296,7 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
 
 
 # ---------------------------------------------------------------------------
+
 # Shared embedding extraction helpers
 # ---------------------------------------------------------------------------
 
@@ -385,6 +386,9 @@ def _binary_classification(embeddings, model_path: str, pos_label: str, neg_labe
 
 
 # ---------------------------------------------------------------------------
+
+
+
 # Classification logic (supports selectable features)
 # ---------------------------------------------------------------------------
 
@@ -545,11 +549,14 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100,
 
 
 # ---------------------------------------------------------------------------
+
+
+
 # Vocal analysis
 # ---------------------------------------------------------------------------
 
 def analyze_vocals_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
-    """Detect vocal presence using voice_instrumental classification head with EffNet embeddings.
+    """Detect vocal presence using voice_instrumental classification head on EffNet embeddings.
     Returns vocal_presence as a continuous 0-1 score (0=instrumental, 1=vocals)."""
     models_dir = os.environ.get("ESSENTIA_MODELS_PATH", "/app/models")
     heads_dir = os.path.join(models_dir, "classification_heads")
@@ -561,27 +568,74 @@ def analyze_vocals_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[st
         print(f"Resampling failed: {e}")
         return {"vocal_presence": 0.0, "label": "Unknown"}
 
-    _, effnet_embeddings = _get_effnet_embeddings(audio_16k, models_dir)
+    # Load EffNet model for embedding extraction
+    genre_model_path = os.path.join(models_dir, "discogs-effnet", "discogs-effnet-bs64-1.pb")
+    if not os.path.exists(genre_model_path):
+        genre_model_path = os.path.join(models_dir, "discogs-effnet-bs64-1.pb")
 
-    path = _find_model(heads_dir, "voice_instrumental-discogs-effnet-1.pb")
-    preds = _run_classification_head(effnet_embeddings, path)
+    voice_model_path = _find_model(heads_dir, "voice_instrumental-discogs-effnet-1.pb")
 
-    if preds is not None:
-        # Raw score: 0.0 = instrumental, 1.0 = vocals
-        vocal_presence = float(np.mean(preds))
-        if vocal_presence >= 0.5:
-            label = "Voice"
-        else:
-            label = "Instrumental"
-        return {
-            "vocal_presence": round(vocal_presence, 4),
-            "label": label,
-        }
+    if not os.path.exists(genre_model_path):
+        print("Missing EffNet model for embedding extraction")
+        return {"vocal_presence": 0.0, "label": "Unknown"}
+    
+    if not voice_model_path or not os.path.exists(voice_model_path):
+        print("Missing voice_instrumental classification head")
+        return {"vocal_presence": 0.0, "label": "Unknown"}
+
+    try:
+        # Step 1: Extract embeddings using EffNet
+        # Use default output which gives the full embedding (1280-dim for effnet-discogs)
+        embedding_model = es.TensorflowPredictEffnetDiscogs(
+            graphFilename=genre_model_path,
+            # No output specified - use default which should be the full embedding
+        )
+        embeddings = embedding_model(audio_16k)
+        
+        if embeddings is None or len(embeddings) == 0:
+            print("Failed to extract embeddings")
+            return {"vocal_presence": 0.0, "label": "Unknown"}
+        
+        print(f"[Vocals] Embeddings shape: {embeddings.shape}")
+        
+        # Step 2: Run voice_instrumental classification head on embeddings
+        # The model expects input at 'model/Placeholder' and outputs at 'model/Softmax'
+        voice_classifier = es.TensorflowPredict2D(
+            graphFilename=voice_model_path,
+            input="model/Placeholder",
+            output="model/Softmax",
+        )
+        predictions = voice_classifier(embeddings)
+
+        if predictions is not None and len(predictions) > 0:
+            # Mean prediction across all patches
+            # predictions shape: (num_patches, 2) for [instrumental, voice]
+            mean_preds = np.mean(predictions, axis=0)
+            
+            # Binary classification: [instrumental_prob, voice_prob]
+            if len(mean_preds) >= 2:
+                vocal_presence = float(mean_preds[1])
+            else:
+                # Single value: voice probability
+                vocal_presence = float(mean_preds[0]) if len(mean_preds) == 1 else float(np.mean(mean_preds))
+            
+            if vocal_presence >= 0.5:
+                label = "Voice"
+            else:
+                label = "Instrumental"
+            return {
+                "vocal_presence": round(vocal_presence, 4),
+                "label": label,
+            }
+    except Exception as e:
+        print(f"Vocal analysis failed: {e}")
 
     return {"vocal_presence": 0.0, "label": "Unknown"}
 
 
 # ---------------------------------------------------------------------------
+
+
 # Enhanced tonal analysis
 # ---------------------------------------------------------------------------
 
