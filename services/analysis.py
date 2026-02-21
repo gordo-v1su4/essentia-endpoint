@@ -6,6 +6,7 @@ import essentia.standard as es
 import numpy as np
 from typing import List, Dict, Any, Optional, Set
 from fastapi import HTTPException
+import math
 
 
 def _find_model(base_dir: str, filename: str) -> Optional[str]:
@@ -56,6 +57,17 @@ def load_audio(file_path: str, sample_rate: int = 44100) -> np.ndarray:
         return loader()
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to load audio: {str(e)}")
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    """Convert to float and clamp non-finite values to a safe default."""
+    try:
+        f = float(value)
+        if math.isfinite(f):
+            return f
+    except Exception:
+        pass
+    return default
 
 def get_high_quality_onsets(audio: np.ndarray, sample_rate: int = 44100) -> List[float]:
     """
@@ -120,24 +132,24 @@ def analyze_rhythm_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[st
 
     for frame in rms_frames:
         rms_val = rms(frame)
-        rms_curve.append(float(rms_val))
+        rms_curve.append(_safe_float(rms_val))
 
     if rms_curve:
         max_rms = max(rms_curve)
         if max_rms > 0:
-            rms_curve = [val / max_rms for val in rms_curve]
+            rms_curve = [_safe_float(val / max_rms) for val in rms_curve]
 
     energy_analyzer = es.Energy()
     energy = energy_analyzer(audio)
-    energy_mean = float(np.mean(energy) if hasattr(energy, '__len__') else energy)
-    energy_std = float(np.std(energy) if hasattr(energy, '__len__') and len(energy) > 1 else 0.0)
+    energy_mean = _safe_float(np.mean(energy) if hasattr(energy, '__len__') else energy)
+    energy_std = _safe_float(np.std(energy) if hasattr(energy, '__len__') and len(energy) > 1 else 0.0)
 
     return {
-        "bpm": float(bpm),
-        "beats": [float(b) for b in beats],
-        "confidence": float(beats_confidence),
-        "onsets": onsets,
-        "duration": duration,
+        "bpm": _safe_float(bpm),
+        "beats": [_safe_float(b) for b in beats],
+        "confidence": _safe_float(beats_confidence),
+        "onsets": [_safe_float(o) for o in onsets],
+        "duration": _safe_float(duration),
         "energy": {
             "mean": energy_mean,
             "std": energy_std,
@@ -230,15 +242,15 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
             chunk = audio[start_s:end_s]
 
             if len(chunk) > 0:
-                energy = float(np.mean(chunk**2))
+                energy = _safe_float(np.mean(chunk**2))
             else:
                 energy = 0.0
 
             segment_data.append({
-                "start": float(start),
-                "end": float(end),
+                "start": _safe_float(start),
+                "end": _safe_float(end),
                 "energy": energy,
-                "pos": ((start + end) / 2) / duration
+                "pos": _safe_float(((start + end) / 2) / duration)
             })
 
         avg_energy = np.mean([s["energy"] for s in segment_data]) if segment_data else 0
@@ -275,8 +287,8 @@ def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict
                 "start": s["start"],
                 "end": s["end"],
                 "label": label,
-                "duration": float(s["end"] - s["start"]),
-                "energy": s["energy"]
+                "duration": _safe_float(s["end"] - s["start"]),
+                "energy": _safe_float(s["energy"])
             })
 
         print(f"[Structure] Labeled {num_segments} sections: {verse_count} verse, {chorus_count} chorus")
@@ -360,14 +372,30 @@ def _run_classification_head(embeddings, model_path: Optional[str], input_name: 
         return None
     if not hasattr(es, 'TensorflowPredict2D'):
         return None
-    try:
-        model = es.TensorflowPredict2D(
-            graphFilename=model_path, input=input_name, output=output_name
-        )
-        return model(embeddings)
-    except Exception as e:
-        print(f"Classification head failed ({model_path}): {e}")
-        return None
+    # Different model exports can use different input/output node names.
+    # Try known pairs in order.
+    candidates = [
+        (input_name, output_name),
+        ("model/Placeholder", "model/Softmax"),
+        ("model/Placeholder", "model/dense_1/BiasAdd"),
+    ]
+    seen = set()
+    last_error = None
+    for in_name, out_name in candidates:
+        key = (in_name, out_name)
+        if key in seen:
+            continue
+        seen.add(key)
+        try:
+            model = es.TensorflowPredict2D(
+                graphFilename=model_path, input=in_name, output=out_name
+            )
+            return model(embeddings)
+        except Exception as e:
+            last_error = e
+
+    print(f"Classification head failed ({model_path}): {last_error}")
+    return None
 
 
 def _binary_classification(embeddings, model_path: str, pos_label: str, neg_label: str,
@@ -378,6 +406,7 @@ def _binary_classification(embeddings, model_path: str, pos_label: str, neg_labe
     if preds is None:
         return None
     mean_pred = float(np.mean(preds))
+    mean_pred = _safe_float(mean_pred)
     if mean_pred >= 0.5:
         return {"label": pos_label, "confidence": mean_pred}
     else:
@@ -477,7 +506,7 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100,
                     mood_label = "Aggressive"
                 moods["label"] = mood_label
                 moods["confidence"] = 1.0
-                moods["all_scores"] = {"valence": float(valence), "arousal": float(arousal)}
+                moods["all_scores"] = {"valence": _safe_float(valence), "arousal": _safe_float(arousal)}
         result["moods"] = moods
 
     # --- Danceability ---
@@ -492,6 +521,7 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100,
         preds = _run_classification_head(effnet_embeddings, path)
         if preds is not None:
             score = float(np.mean(preds))
+            score = _safe_float(score)
             label = "Approachable" if score >= 0.5 else "Not Approachable"
             result["approachability"] = {"label": label, "confidence": score if score >= 0.5 else 1.0 - score}
         else:
@@ -503,6 +533,7 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100,
         preds = _run_classification_head(effnet_embeddings, path)
         if preds is not None:
             score = float(np.mean(preds))
+            score = _safe_float(score)
             label = "Engaging" if score >= 0.5 else "Not Engaging"
             result["engagement"] = {"label": label, "confidence": score if score >= 0.5 else 1.0 - score}
         else:
@@ -530,6 +561,7 @@ def analyze_classification_logic(audio: np.ndarray, sample_rate: int = 44100,
             for i, score in enumerate(mean_preds):
                 if score > 0.15 and i < len(INSTRUMENT_LABELS):
                     instruments.append({"label": INSTRUMENT_LABELS[i], "confidence": float(score)})
+                    instruments[-1]["confidence"] = _safe_float(instruments[-1]["confidence"])
             instruments.sort(key=lambda x: x["confidence"], reverse=True)
             result["instrument"] = instruments
         else:
@@ -568,13 +600,19 @@ def analyze_vocals_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[st
 
     if preds is not None:
         # Raw score: 0.0 = instrumental, 1.0 = vocals
-        vocal_presence = float(np.mean(preds))
+        preds_arr = np.asarray(preds)
+        if preds_arr.ndim >= 2 and preds_arr.shape[-1] == 2:
+            # Softmax binary heads typically return [instrumental, voice]
+            vocal_scores = preds_arr[..., 1]
+        else:
+            vocal_scores = preds_arr
+        vocal_presence = _safe_float(np.mean(vocal_scores))
         if vocal_presence >= 0.5:
             label = "Voice"
         else:
             label = "Instrumental"
         return {
-            "vocal_presence": round(vocal_presence, 4),
+            "vocal_presence": _safe_float(round(vocal_presence, 4)),
             "label": label,
         }
 
@@ -598,7 +636,7 @@ def analyze_tonal_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str
         results = key_extractor(audio)
         key = results[0]
         scale = results[1]
-        strength = float(results[2])
+        strength = _safe_float(results[2])
     except Exception as e:
         print(f"Key analysis failed: {e}")
         key, scale, strength = "Unknown", "Unknown", 0.0
@@ -620,7 +658,7 @@ def analyze_tonal_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str
             mean_preds = np.mean(tempo_preds, axis=0)
             # Bins map to 30-286 BPM (256 bins)
             bpm_range = np.linspace(30, 286, len(mean_preds))
-            tempo_cnn_value = float(bpm_range[int(np.argmax(mean_preds))])
+            tempo_cnn_value = _safe_float(bpm_range[int(np.argmax(mean_preds))])
     except Exception as e:
         print(f"TempoCNN analysis failed: {e}")
 
@@ -653,10 +691,10 @@ def analyze_tonal_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str
                 conf_arr = np.array(confidences) if hasattr(confidences, '__len__') else np.array([float(confidences)])
                 voiced_mask = conf_arr > 0.3
                 if np.any(voiced_mask):
-                    mean_freq = float(np.mean(freq_arr[voiced_mask]))
-                    mean_conf = float(np.mean(conf_arr[voiced_mask]))
+                    mean_freq = _safe_float(np.mean(freq_arr[voiced_mask]))
+                    mean_conf = _safe_float(np.mean(conf_arr[voiced_mask]))
                 else:
-                    mean_freq = float(np.mean(freq_arr))
+                    mean_freq = _safe_float(np.mean(freq_arr))
                     mean_conf = 0.0
                 pitch_data = {"mean_frequency": mean_freq, "confidence": mean_conf}
     except Exception as e:
