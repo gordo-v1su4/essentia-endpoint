@@ -4,7 +4,7 @@
 # Or:   DOCKERHUB_USER=otherusername ./build-push.sh
 
 set -e
-VERSION="${VERSION:-$(git rev-parse --short HEAD)}"
+VERSION="${VERSION:-3.0.1}"
 USER="${DOCKERHUB_USER:-${1:-gordov1su4}}"
 
 IMAGE="$USER/essentia-api"

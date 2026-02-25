@@ -2,7 +2,7 @@
 
 FastAPI server for comprehensive audio analysis using Essentia. Provides rhythm analysis, structural segmentation, classification (genre/mood/tags + selectable features), vocal detection, and enhanced tonal analysis with deep-learning tempo and pitch.
 
-**Version:** 3.0.0
+**Version:** 3.0.1
 
 ## Quick Start
 
@@ -135,7 +135,7 @@ All of the above combined in a single response.
 ### `GET /health`
 
 ```json
-{"status": "ok", "version": "3.0.0"}
+{"status": "ok", "version": "3.0.1"}
 ```
 
 ### Protected vs Public
