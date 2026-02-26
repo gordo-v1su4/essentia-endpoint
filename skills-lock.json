@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "github-actions-templates": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "c86e5a6f9651b1893e7dda221083fca4503907bde97542780072df7eecd017c8"
+    }
+  }
+}
