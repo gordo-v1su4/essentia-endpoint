@@ -28,13 +28,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 120s
+    # CPU-only by default. Add GPU via Coolify if NVIDIA Container Toolkit is installed.
     deploy:
       resources:
         limits:
           cpus: '4'
           memory: 8G
         reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+          cpus: '0.5'
+          memory: 1G
