@@ -45,3 +45,9 @@ jobs:
             gordov1su4/essentia-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Trigger Coolify deployment
+        if: ${{ secrets.COOLIFY_WEBHOOK_URL != '' }}
+        run: |
+          curl -fsS -X POST "${{ secrets.COOLIFY_WEBHOOK_URL }}" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"

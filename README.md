@@ -208,6 +208,10 @@ docs/openapi.json        OpenAPI 3.1 schema
 |--------|-------------|
 | `DOCKERHUB_USERNAME` | Docker Hub username |
 | `DOCKERHUB_TOKEN` | Docker Hub access token |
+| `COOLIFY_WEBHOOK_URL` | Coolify deploy webhook URL (optional) |
+| `COOLIFY_TOKEN` | Coolify API token with deploy permission (optional) |
+
+If Coolify secrets are set, the workflow triggers a Coolify redeploy after pushing to Docker Hub.
 
 Workflow: [`.github/workflows/docker-build-push.yml`](.github/workflows/docker-build-push.yml)
 
