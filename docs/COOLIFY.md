@@ -53,15 +53,13 @@ You can create separate Coolify resources for different branches:
 
 Each branch deployment can have its own environment variables and domain.
 
-## Docker Hub Alternative
+## Docker Hub Alternative (Pre-built Image)
 
-Instead of building from source in Coolify, you can pull a pre-built image:
+To pull a pre-built image instead of building (faster deploy, but requires a successful pull):
 
-```bash
-gordov1su4/essentia-api:latest
-```
+Set `ESSENTIA_IMAGE=gordov1su4/essentia-api:latest` (or `:4.0.0`) in Coolify environment variables.
 
-In Coolify, use "Docker Image" deployment and point to the image. This skips the build step entirely.
+**Note:** If you see `archive/tar: invalid tar header` or `failed to copy: EOF` when pulling, switch to build-from-source by unsetting `ESSENTIA_IMAGE`.
 
 ## Verify
 
@@ -73,6 +71,8 @@ curl https://your-coolify-domain.com/health
 ```
 
 ## Troubleshooting
+
+**`archive/tar: invalid tar header` or `failed to copy: failed to send write: EOF`**: These indicate a corrupted image pull. **Fix: Build from source instead of pulling.** Unset `ESSENTIA_IMAGE` in Coolify environment variables (or remove it). The default `essentia-api:local` triggers a local build from the Dockerfile, avoiding the registry pull. First deploy will take 10–20 minutes to build.
 
 **Build fails**: Essentia build takes 10-20 minutes and ~2GB disk. Check Coolify build logs. Enable Docker layer caching to speed up rebuilds.
 

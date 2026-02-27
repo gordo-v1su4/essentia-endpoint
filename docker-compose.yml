@@ -1,7 +1,8 @@
 services:
   essentia-api:
-    # For registry-based deploys (Coolify/server), set ESSENTIA_IMAGE in .env
-    image: ${ESSENTIA_IMAGE:-gordov1su4/essentia-api:latest}
+    # Build from source by default. Set ESSENTIA_IMAGE to pull pre-built (e.g. gordov1su4/essentia-api:latest)
+    # Use build default to avoid "invalid tar header" / "failed to copy: EOF" when pulling from registry
+    image: ${ESSENTIA_IMAGE:-essentia-api:local}
     build:
       context: .
       dockerfile: Dockerfile

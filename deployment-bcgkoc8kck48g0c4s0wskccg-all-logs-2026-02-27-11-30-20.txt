@@ -1,0 +1,468 @@
+2026-Feb-27 08:59:50.045090 Starting deployment of gordo-v1su4/essentia-endpoint:main-aoso44ks40cockkko48sgccg to localhost.
+2026-Feb-27 08:59:50.164201 Preparing container with helper image: ghcr.io/coollabsio/coolify-helper:1.0.12
+2026-Feb-27 08:59:50.235965 [DEBUG] [CMD]: docker stop -t 30 bcgkoc8kck48g0c4s0wskccg
+2026-Feb-27 08:59:50.235965 [DEBUG] Error response from daemon: No such container: bcgkoc8kck48g0c4s0wskccg
+2026-Feb-27 08:59:50.375289 [DEBUG] [CMD]: docker run -d --network coolify --name bcgkoc8kck48g0c4s0wskccg  --rm -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/coollabsio/coolify-helper:1.0.12
+2026-Feb-27 08:59:50.375289 [DEBUG] 7cccc32a0e8d883a6c56292521e625bd92802a5e33a75095cc1e0ec158ca900e
+2026-Feb-27 08:59:50.945811 [DEBUG] [CMD]: docker exec bcgkoc8kck48g0c4s0wskccg bash -c 'GIT_SSH_COMMAND="ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git ls-remote https://github.com/gordo-v1su4/essentia-endpoint refs/heads/main'
+2026-Feb-27 08:59:50.945811 [DEBUG] cebaba52d2b02d39647b7928967f66566e49bd39	refs/heads/main
+2026-Feb-27 08:59:50.955304 ----------------------------------------
+2026-Feb-27 08:59:50.959905 Importing gordo-v1su4/essentia-endpoint:main (commit sha cebaba52d2b02d39647b7928967f66566e49bd39) to /artifacts/bcgkoc8kck48g0c4s0wskccg.
+2026-Feb-27 08:59:51.080515 [DEBUG] [CMD]: docker exec bcgkoc8kck48g0c4s0wskccg bash -c 'git clone --depth=1 --recurse-submodules --shallow-submodules -b 'main' 'https://github.com/gordo-v1su4/essentia-endpoint' '/artifacts/bcgkoc8kck48g0c4s0wskccg' && cd '/artifacts/bcgkoc8kck48g0c4s0wskccg' && if [ -f .gitmodules ]; then sed -i "s#git@\(.*\):#https://\1/#g" '/artifacts/bcgkoc8kck48g0c4s0wskccg'/.gitmodules || true && git submodule sync && GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git submodule update --init --recursive --depth=1; fi && cd '/artifacts/bcgkoc8kck48g0c4s0wskccg' && GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git lfs pull'
+2026-Feb-27 08:59:51.080515 [DEBUG] Cloning into '/artifacts/bcgkoc8kck48g0c4s0wskccg'...
+2026-Feb-27 08:59:55.267400 [DEBUG] [CMD]: docker exec bcgkoc8kck48g0c4s0wskccg bash -c 'cd /artifacts/bcgkoc8kck48g0c4s0wskccg && git log -1 cebaba52d2b02d39647b7928967f66566e49bd39 --pretty=%B'
+2026-Feb-27 08:59:55.267400 [DEBUG] Improve local build scripts for amd64 and smoke testing
+2026-Feb-27 08:59:59.590963 Pulling & building required images.
+2026-Feb-27 08:59:59.602111 [DEBUG] Creating build-time .env file in /artifacts (outside Docker context).
+2026-Feb-27 08:59:59.720380 Adding build arguments to Docker Compose build command.
+2026-Feb-27 08:59:59.896863 [DEBUG] Creating .env file with runtime variables for container.
+2026-Feb-27 09:00:00.083575 Removing old containers.
+2026-Feb-27 09:00:00.154647 Starting new application.
+2026-Feb-27 09:00:00.458074 [DEBUG] [CMD]: docker exec bcgkoc8kck48g0c4s0wskccg bash -c 'COOLIFY_BRANCH=main COOLIFY_RESOURCE_UUID=q0c0k44scskws8gggs8co440  docker compose --env-file /artifacts/bcgkoc8kck48g0c4s0wskccg/.env --project-name q0c0k44scskws8gggs8co440 --project-directory /artifacts/bcgkoc8kck48g0c4s0wskccg -f /artifacts/bcgkoc8kck48g0c4s0wskccg/docker-compose.yml up -d'
+2026-Feb-27 09:00:00.458074 [DEBUG] essentia-api Pulling
+2026-Feb-27 09:00:01.625908 [DEBUG] 263fc748118f Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] 16c36d0187d0 Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] e7a56570655c Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] eb3a92026751 Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] 7b19af6ad173 Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] e557fd049406 Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] 4f4fb700ef54 Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] 00bd78c25c13 Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] 4f4fb700ef54 Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] 507fc9045cba Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] 340cf11aa5ff Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] bc41d916af3b Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] adee6260d5d0 Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] cadade24876f Pulling fs layer
+2026-Feb-27 09:00:01.625908 [DEBUG] 4f4fb700ef54 Pulling fs layer
+2026-Feb-27 09:00:01.630287 [DEBUG] 05e63d7cb400 Pulling fs layer
+2026-Feb-27 09:00:01.665045 [DEBUG] 507fc9045cba Already exists
+2026-Feb-27 09:00:01.671263 [DEBUG] 16c36d0187d0 Already exists
+2026-Feb-27 09:00:01.671263 [DEBUG] 4f4fb700ef54 Already exists
+2026-Feb-27 09:00:01.671263 [DEBUG] 340cf11aa5ff Already exists
+2026-Feb-27 09:00:01.671263 [DEBUG] e7a56570655c Already exists
+2026-Feb-27 09:00:01.671263 [DEBUG] 263fc748118f Already exists
+2026-Feb-27 09:00:01.678774 [DEBUG] 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:01.773706 [DEBUG] 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:01.874561 [DEBUG] 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:01.974869 [DEBUG] 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:02.074250 [DEBUG] 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:02.174894 [DEBUG] 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:02.265307 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  1.049MB/321MB
+2026-Feb-27 09:00:02.274250 [DEBUG] 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:02.365371 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  1.049MB/321MB
+2026-Feb-27 09:00:02.374210 [DEBUG] 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:02.465309 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  2.097MB/321MB
+2026-Feb-27 09:00:02.465309 [DEBUG] e557fd049406 Downloading [>                                                  ]  1.049MB/54.66MB
+2026-Feb-27 09:00:02.475074 [DEBUG] 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:02.565477 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  2.097MB/321MB
+2026-Feb-27 09:00:02.565477 [DEBUG] e557fd049406 Downloading [>                                                  ]  1.049MB/54.66MB
+2026-Feb-27 09:00:02.574899 [DEBUG] 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:02.665457 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:02.665457 [DEBUG] e557fd049406 Downloading [=>                                                 ]  2.097MB/54.66MB
+2026-Feb-27 09:00:02.673638 [DEBUG] 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:02.765459 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:02.765459 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:02.774167 [DEBUG] 263fc748118f Extracting 2 s
+2026-Feb-27 09:00:02.865614 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:02.865614 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:02.966104 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:02.966104 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:03.065394 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:03.065394 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:03.165676 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:03.165676 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:03.266368 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:03.266368 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:03.366637 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:03.366637 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:03.465867 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:03.465867 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:03.566711 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:03.566711 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:03.666016 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:03.666016 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:03.765521 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:03.765521 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:03.865820 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:03.865820 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:03.965984 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:03.965984 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:04.065821 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:04.065821 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:04.165745 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:04.165745 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:04.266341 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:04.266341 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:04.366324 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:04.366324 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:04.466781 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:04.466781 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:04.566275 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:04.566275 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:04.665877 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:04.665877 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:04.766792 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:04.766792 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:04.866645 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:04.866645 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:04.966480 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:04.966480 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:05.066642 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:05.066642 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:05.166183 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:05.166183 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:05.265830 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:05.265830 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:05.366161 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:05.366161 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:05.465623 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:05.465623 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:05.565913 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:05.565913 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:05.666485 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:05.666485 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:05.766779 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:05.766779 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:05.866008 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:05.866008 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:05.966652 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:05.966652 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:06.065883 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:06.065883 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:06.166057 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:06.166057 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:06.265569 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:06.265569 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:06.365985 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:06.365985 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:06.466127 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:06.466127 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:06.565648 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:06.565648 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:06.666228 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:06.666228 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:06.766449 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:06.766449 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:06.866230 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:06.866230 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:06.965631 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:06.965631 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:07.066209 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:07.066209 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:07.165837 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:07.165837 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:07.265813 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:07.265813 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:07.366259 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:07.366259 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:07.466585 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:07.466585 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:07.566685 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:07.566685 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:07.665879 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:07.665879 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:07.766783 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:07.766783 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:07.865607 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:07.865607 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:07.965665 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:07.965665 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:08.065977 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:08.065977 [DEBUG] c51efea90243 Download complete
+2026-Feb-27 09:00:08.065977 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:08.166824 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:08.166824 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:08.267132 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:08.267132 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:08.366699 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:08.366699 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:08.466577 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:08.466577 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:08.566539 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:08.566539 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:08.666142 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:08.666142 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:08.766240 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:08.766240 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:08.866459 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:08.866459 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:08.965728 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:08.965728 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:09.065972 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:09.065972 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:09.166197 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:09.166197 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:09.265910 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:09.265910 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:09.365731 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:09.365731 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:09.465992 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:09.465992 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:09.566199 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:09.566199 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:09.666259 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:09.666259 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:09.766534 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:09.766534 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:09.865395 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:09.865395 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:09.966369 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:09.966369 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:10.066482 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:10.066482 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:10.165537 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:10.165537 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:10.265901 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:10.265901 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:10.365928 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:10.365928 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:10.465894 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:10.465894 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:10.566282 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:10.566282 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:10.666138 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:10.666138 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:10.765862 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:10.765862 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:10.865961 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:10.865961 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:10.966172 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:10.966172 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.065946 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.065946 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.136190 [DEBUG] 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.136190 [DEBUG] e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.149726 [DEBUG] failed to extract layer (application/vnd.oci.image.layer.v1.tar+gzip sha256:263fc748118f7937f811e3e9c9355318db07dd2dd1dccc370dadaa7d0b5ed692) to overlayfs as "extract-609465318-H_k1 sha256:eefd3f0f00e9eeedda164012de57688bcca67a879a20e7d56223c070c1373fa4": mount callback failed on /var/lib/containerd/tmpmounts/containerd-mount1625599948: archive/tar: invalid tar header
+2026-Feb-27 09:00:11.154533 [DEBUG] exit status 1
+2026-Feb-27 09:00:11.180915 ========================================
+2026-Feb-27 09:00:11.187017 Deployment failed: Command execution failed (exit code 1): docker exec bcgkoc8kck48g0c4s0wskccg bash -c 'COOLIFY_BRANCH=main COOLIFY_RESOURCE_UUID=q0c0k44scskws8gggs8co440  docker compose --env-file /artifacts/bcgkoc8kck48g0c4s0wskccg/.env --project-name q0c0k44scskws8gggs8co440 --project-directory /artifacts/bcgkoc8kck48g0c4s0wskccg -f /artifacts/bcgkoc8kck48g0c4s0wskccg/docker-compose.yml up -d'
+2026-Feb-27 09:00:11.187017 Error:  essentia-api Pulling
+2026-Feb-27 09:00:11.187017 263fc748118f Pulling fs layer
+2026-Feb-27 09:00:11.187017 16c36d0187d0 Pulling fs layer
+2026-Feb-27 09:00:11.187017 e7a56570655c Pulling fs layer
+2026-Feb-27 09:00:11.187017 eb3a92026751 Pulling fs layer
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Pulling fs layer
+2026-Feb-27 09:00:11.187017 e557fd049406 Pulling fs layer
+2026-Feb-27 09:00:11.187017 4f4fb700ef54 Pulling fs layer
+2026-Feb-27 09:00:11.187017 00bd78c25c13 Pulling fs layer
+2026-Feb-27 09:00:11.187017 4f4fb700ef54 Pulling fs layer
+2026-Feb-27 09:00:11.187017 507fc9045cba Pulling fs layer
+2026-Feb-27 09:00:11.187017 340cf11aa5ff Pulling fs layer
+2026-Feb-27 09:00:11.187017 bc41d916af3b Pulling fs layer
+2026-Feb-27 09:00:11.187017 adee6260d5d0 Pulling fs layer
+2026-Feb-27 09:00:11.187017 cadade24876f Pulling fs layer
+2026-Feb-27 09:00:11.187017 4f4fb700ef54 Pulling fs layer
+2026-Feb-27 09:00:11.187017 05e63d7cb400 Pulling fs layer
+2026-Feb-27 09:00:11.187017 507fc9045cba Already exists
+2026-Feb-27 09:00:11.187017 16c36d0187d0 Already exists
+2026-Feb-27 09:00:11.187017 4f4fb700ef54 Already exists
+2026-Feb-27 09:00:11.187017 340cf11aa5ff Already exists
+2026-Feb-27 09:00:11.187017 e7a56570655c Already exists
+2026-Feb-27 09:00:11.187017 263fc748118f Already exists
+2026-Feb-27 09:00:11.187017 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:11.187017 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:11.187017 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:11.187017 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:11.187017 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:11.187017 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  1.049MB/321MB
+2026-Feb-27 09:00:11.187017 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  1.049MB/321MB
+2026-Feb-27 09:00:11.187017 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  2.097MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [>                                                  ]  1.049MB/54.66MB
+2026-Feb-27 09:00:11.187017 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  2.097MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [>                                                  ]  1.049MB/54.66MB
+2026-Feb-27 09:00:11.187017 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [=>                                                 ]  2.097MB/54.66MB
+2026-Feb-27 09:00:11.187017 263fc748118f Extracting 1 s
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 263fc748118f Extracting 2 s
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 c51efea90243 Download complete
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 7b19af6ad173 Downloading [>                                                  ]  3.146MB/321MB
+2026-Feb-27 09:00:11.187017 e557fd049406 Downloading [==>                                                ]  3.146MB/54.66MB
+2026-Feb-27 09:00:11.187017 failed to extract layer (application/vnd.oci.image.layer.v1.tar+gzip sha256:263fc748118f7937f811e3e9c9355318db07dd2dd1dccc370dadaa7d0b5ed692) to overlayfs as "extract-609465318-H_k1 sha256:eefd3f0f00e9eeedda164012de57688bcca67a879a20e7d56223c070c1373fa4": mount callback failed on /var/lib/containerd/tmpmounts/containerd-mount1625599948: archive/tar: invalid tar header
+2026-Feb-27 09:00:11.187017 exit status 1
+2026-Feb-27 09:00:11.193670 [DEBUG] Error type: RuntimeException
+2026-Feb-27 09:00:11.199814 [DEBUG] Error code: 0
+2026-Feb-27 09:00:11.205496 [DEBUG] Location: /var/www/html/app/Traits/ExecuteRemoteCommand.php:243
+2026-Feb-27 09:00:11.211697 [DEBUG] Stack trace (first 5 lines):
+2026-Feb-27 09:00:11.217319 [DEBUG] #0 /var/www/html/app/Traits/ExecuteRemoteCommand.php(104): App\Jobs\ApplicationDeploymentJob->executeCommandWithProcess()
+2026-Feb-27 09:00:11.223541 [DEBUG] #1 /var/www/html/vendor/laravel/framework/src/Illuminate/Collections/Traits/EnumeratesValues.php(272): App\Jobs\ApplicationDeploymentJob->{closure:App\Traits\ExecuteRemoteCommand::execute_remote_command():71}()
+2026-Feb-27 09:00:11.229297 [DEBUG] #2 /var/www/html/app/Traits/ExecuteRemoteCommand.php(71): Illuminate\Support\Collection->each()
+2026-Feb-27 09:00:11.235449 [DEBUG] #3 /var/www/html/app/Jobs/ApplicationDeploymentJob.php(816): App\Jobs\ApplicationDeploymentJob->execute_remote_command()
+2026-Feb-27 09:00:11.242501 [DEBUG] #4 /var/www/html/app/Jobs/ApplicationDeploymentJob.php(467): App\Jobs\ApplicationDeploymentJob->deploy_docker_compose_buildpack()
+2026-Feb-27 09:00:11.248676 ========================================
+2026-Feb-27 09:00:11.521031 Gracefully shutting down build container: bcgkoc8kck48g0c4s0wskccg
+2026-Feb-27 09:00:11.805455 [DEBUG] [CMD]: docker stop -t 30 bcgkoc8kck48g0c4s0wskccg
+2026-Feb-27 09:00:11.805455 [DEBUG] bcgkoc8kck48g0c4s0wskccg
