@@ -4,7 +4,7 @@
 # Or:   DOCKERHUB_USER=otherusername ./build-push.sh
 
 set -euo pipefail
-VERSION="${VERSION:-4.0.0}"
+VERSION="${VERSION:-4.0.1}"
 USER="${DOCKERHUB_USER:-${1:-gordov1su4}}"
 PLATFORM="${PLATFORM:-linux/amd64}"
 BUILDER="${BUILDER_NAME:-essentia-builder}"

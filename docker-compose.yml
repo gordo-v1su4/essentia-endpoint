@@ -1,6 +1,6 @@
 services:
   essentia-api:
-    # Build from source by default. Set ESSENTIA_IMAGE to pull pre-built (e.g. gordov1su4/essentia-api:4.0.0)
+    # Build from source by default. Set ESSENTIA_IMAGE to pull pre-built (e.g. gordov1su4/essentia-api:4.0.1)
     # Use build default to avoid "invalid tar header" / "failed to copy: EOF" when pulling from registry
     image: ${ESSENTIA_IMAGE:-essentia-api:local}
     build:

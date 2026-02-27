@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Essentia Audio Analysis API — a FastAPI server providing audio analysis (rhythm, structure, genre/mood classification, tonal, vocals) using the Essentia library with TensorFlow models. Targets electronic/EDM music. Current version: 3.0.1.
+Essentia Audio Analysis API — a FastAPI server providing audio analysis (rhythm, structure, genre/mood classification, tonal, vocals) using the Essentia library with TensorFlow models. Targets electronic/EDM music. Current version: 4.0.1.
 
 ## Build & Run Commands
 

@@ -57,7 +57,7 @@ Each branch deployment can have its own environment variables and domain.
 
 To pull a pre-built image instead of building (faster deploy, but requires a successful pull):
 
-Set `ESSENTIA_IMAGE=gordov1su4/essentia-api:latest` (or `:4.0.0`) in Coolify environment variables.
+Set `ESSENTIA_IMAGE=gordov1su4/essentia-api:latest` (or `:4.0.1`) in Coolify environment variables.
 
 **Note:** If you see `archive/tar: invalid tar header` or `failed to copy: EOF` when pulling, switch to build-from-source by unsetting `ESSENTIA_IMAGE`.
 
@@ -81,6 +81,10 @@ curl https://your-coolify-domain.com/health
 **CORS errors**: Verify `CORS_ORIGINS` includes your frontend domain exactly (including `https://`).
 
 **Health check fails**: The container needs ~60-120s to start (model loading). Check Coolify logs for startup errors.
+
+## Versioning
+
+Before each deploy, bump the version in `main.py` (`API_VERSION`). GitHub Actions and the `/health` endpoint use this. Follow semver: patch (4.0.1→4.0.2), minor (4.0.x→4.1.0), or major (4.x.x→5.0.0).
 
 ## Checklist
 

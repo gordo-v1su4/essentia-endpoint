@@ -31,7 +31,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          VERSION=$(grep 'API_VERSION = "' main.py | sed 's/.*"\([^"]*\)".*/\1/' || echo "4.0.0")
+          VERSION=$(grep 'API_VERSION = "' main.py | sed 's/.*"\([^"]*\)".*/\1/' || echo "4.0.1")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
