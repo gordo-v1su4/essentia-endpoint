@@ -2,7 +2,7 @@
 
 FastAPI server for comprehensive audio analysis using Essentia. Provides rhythm analysis, structural segmentation, classification (genre/mood/tags + selectable features), vocal detection, and enhanced tonal analysis with deep-learning tempo and pitch.
 
-**Version:** 3.0.2
+**Version:** 3.0.1
 
 ## Quick Start
 
@@ -135,7 +135,7 @@ All of the above combined in a single response.
 ### `GET /health`
 
 ```json
-{"status": "ok", "version": "3.0.2"}
+{"status": "ok", "version": "3.0.1"}
 ```
 
 ### Protected vs Public
@@ -187,7 +187,7 @@ api/auth.py              API key auth (X-API-Key header)
 api/models.py            Pydantic response models
 services/analysis.py     Core analysis (rhythm, structure, classification, tonal, vocals)
 services/labels.py       Genre (400), tag (50), and instrument (40) label mappings
-download_models.py       Downloads models from essentia.upf.edu
+download_models.sh       Downloads models from essentia.upf.edu
 entrypoint.sh            Auto-downloads models on first run, starts uvicorn
 docs/openapi.json        OpenAPI 3.1 schema
 ```
@@ -196,24 +196,10 @@ docs/openapi.json        OpenAPI 3.1 schema
 
 ### Docker Hub
 
-**Manual build and push:**
 ```bash
 ./build-push.sh          # Linux/macOS
 ./build-push.ps1         # Windows
 ```
-
-**GitHub Actions (automatic):** Pushes to `gordov1su4/essentia-api` on every push to `main`. Add these secrets in GitHub repo settings:
-
-| Secret | Description |
-|--------|-------------|
-| `DOCKERHUB_USERNAME` | Docker Hub username |
-| `DOCKERHUB_TOKEN` | Docker Hub access token |
-| `COOLIFY_WEBHOOK_URL` | Coolify deploy webhook URL (optional) |
-| `COOLIFY_TOKEN` | Coolify API token with deploy permission (optional) |
-
-If Coolify secrets are set, the workflow triggers a Coolify redeploy after pushing to Docker Hub.
-
-Workflow: [`.github/workflows/docker-build-push.yml`](.github/workflows/docker-build-push.yml)
 
 ### Cloud platforms
 

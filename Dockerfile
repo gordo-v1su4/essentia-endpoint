@@ -2,12 +2,14 @@
 # This image includes libcudart and libcuda which TensorFlow needs
 FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
-# Install Python 3.11, pip, git, and curl (used by healthcheck)
+# Get uv binary from official image (no pip needed)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Install Python 3.11, git, and curl (used by healthcheck)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     python3.11 \
     python3.11-dev \
-    python3-pip \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/* \
@@ -15,10 +17,10 @@ RUN apt-get update && \
     && ln -sf /usr/bin/python3.11 /usr/bin/python3 \
     && ln -sf /usr/bin/python3.11 /usr/local/bin/python3.11
 
-# Install Python packages
+# Install Python packages with uv
 WORKDIR /app
 COPY requirements.txt .
-RUN python3.11 -m pip install --no-cache-dir -r requirements.txt
+RUN uv pip install --system --no-cache -r requirements.txt
 
 # Copy application code
 WORKDIR /app
