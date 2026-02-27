@@ -65,7 +65,7 @@ docker run -d -p 7000:8000 -v ./models:/app/models \
 
 ```bash
 curl http://localhost:7000/health
-# {"status":"ok","version":"3.0.2"}
+# {"status":"ok","version":"3.0.1"}
 ```
 
 ## Production Checklist

@@ -2,6 +2,10 @@
 # Use: docker-compose up -d --build
 services:
   essentia-api:
+    # Local-only build path
+    build:
+      context: .
+      dockerfile: Dockerfile
     deploy:
       resources:
         limits:

@@ -328,15 +328,15 @@ def _get_effnet_embeddings(audio_16k: np.ndarray, models_dir: str):
     if not os.path.exists(genre_model_path) or not hasattr(es, 'TensorflowPredictEffnetDiscogs'):
         return None, None
 
-    # Full activations (genre predictions) - PartitionedCall:0 = [64, 400]
+    # Full activations (genre predictions)
     model_genre = es.TensorflowPredictEffnetDiscogs(
-        graphFilename=genre_model_path, output="PartitionedCall:0"
+        graphFilename=genre_model_path, output="PartitionedCall:1"
     )
     activations = model_genre(audio_16k)
 
-    # Embeddings for classification heads - PartitionedCall:1 = [64, 1280]
+    # Embeddings for classification heads
     model_embed = es.TensorflowPredictEffnetDiscogs(
-        graphFilename=genre_model_path, output="PartitionedCall:1"
+        graphFilename=genre_model_path, output="PartitionedCall:0"
     )
     embeddings = model_embed(audio_16k)
 

@@ -3,7 +3,7 @@
   "info": {
     "title": "Audio Analysis API",
     "description": "High-quality music analysis using Essentia C++ core via Python.",
-    "version": "3.0.2"
+    "version": "3.0.1"
   },
   "paths": {
     "/analyze/rhythm": {

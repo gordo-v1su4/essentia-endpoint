@@ -1,6 +1,6 @@
 services:
   essentia-api:
-    # Build from source by default. Set ESSENTIA_IMAGE to pull pre-built (e.g. gordov1su4/essentia-api:latest)
+    # Build from source by default. Set ESSENTIA_IMAGE to pull pre-built (e.g. gordov1su4/essentia-api:4.0.0)
     # Use build default to avoid "invalid tar header" / "failed to copy: EOF" when pulling from registry
     image: ${ESSENTIA_IMAGE:-essentia-api:local}
     build:
@@ -29,12 +29,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 120s
+    # Resource limits. Runs on CPU by default. Add GPU via Coolify if you have NVIDIA Container Toolkit.
     deploy:
       resources:
         limits:
           cpus: '4'
           memory: 8G
         reservations:
+          cpus: '0.5'
+          memory: 1G
           devices:
             - driver: nvidia
               count: 1

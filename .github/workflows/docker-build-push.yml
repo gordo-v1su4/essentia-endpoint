@@ -31,7 +31,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          VERSION=$(grep 'API_VERSION = "' main.py | sed 's/.*"\([^"]*\)".*/\1/' || echo "3.0.2")
+          VERSION=$(grep 'API_VERSION = "' main.py | sed 's/.*"\([^"]*\)".*/\1/' || echo "4.0.0")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
@@ -48,7 +48,6 @@ jobs:
 
   deploy-to-coolify:
     needs: build-and-push
-    # Set ENABLE_COOLIFY_DEPLOY=true in Settings → Secrets and variables → Actions → Variables
     if: vars.ENABLE_COOLIFY_DEPLOY == 'true'
     runs-on: ubuntu-latest
     steps:

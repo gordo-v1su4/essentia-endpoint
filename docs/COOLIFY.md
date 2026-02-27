@@ -67,7 +67,7 @@ After deployment:
 
 ```bash
 curl https://your-coolify-domain.com/health
-# {"status":"ok","version":"3.0.2"}
+# {"status":"ok","version":"3.0.1"}
 ```
 
 ## Troubleshooting
