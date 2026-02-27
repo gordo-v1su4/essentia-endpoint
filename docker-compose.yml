@@ -1,7 +1,7 @@
 services:
   essentia-api:
     # Production/Coolify: pull prebuilt image from registry (no server-side build).
-    image: ${ESSENTIA_IMAGE:-gordov1su4/essentia-api:3.0.3}
+    image: ${ESSENTIA_IMAGE:-gordov1su4/essentia-api:4.0.0}
     container_name: essentia-audio-api
     ports:
       # Map to port 7000 for local dev, Coolify will use its own reverse proxy for 80/443
