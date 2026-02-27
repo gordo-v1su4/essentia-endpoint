@@ -4,7 +4,7 @@
 # Or:   DOCKERHUB_USER=otherusername ./build-push.sh
 
 set -e
-VERSION="${VERSION:-3.0.2}"
+VERSION="${VERSION:-3.0.3}"
 USER="${DOCKERHUB_USER:-${1:-gordov1su4}}"
 
 IMAGE="$USER/essentia-api"
