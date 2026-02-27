@@ -32,5 +32,7 @@ services:
           cpus: '4'
           memory: 8G
         reservations:
-          cpus: '0.5'
-          memory: 1G
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
