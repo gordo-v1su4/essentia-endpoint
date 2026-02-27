@@ -201,22 +201,6 @@ docs/openapi.json        OpenAPI 3.1 schema
 ./build-push.ps1         # Windows
 ```
 
-### Next.js / v0 Integration
-
-Use the proxy app in `/next-v0-proxy` when you want to call Essentia from a v0-generated Next.js UI.
-
-```bash
-cd next-v0-proxy
-cp .env.example .env.local
-npm install
-npm run dev
-```
-
-This keeps your API key server-side and forwards uploads from:
-
-- `POST /api/essentia/*` to your FastAPI Essentia service
-- `GET /api/essentia/health` to upstream `/health`
-
 ### Cloud platforms
 
 Works with AWS ECS/Fargate, Google Cloud Run, Azure Container Instances, DigitalOcean App Platform, or Coolify.

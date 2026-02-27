@@ -19,9 +19,3 @@ Thumbs.db
 
 # Docker
 # .dockerignore should be included in repo
-
-# Next.js proxy app
-next-v0-proxy/node_modules/
-next-v0-proxy/.next/
-next-v0-proxy/.env.local
-next-v0-proxy/.vercel/
