@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   api:
     build:
@@ -12,12 +10,26 @@ services:
       - CORS_ORIGINS=https://essentia.v1su4.dev
       - API_KEYS=${API_KEYS}  # We'll set this in Portainer UI
       - ESSENTIA_MODELS_PATH=/app/models
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - TONAL_CREPE_MODEL=${TONAL_CREPE_MODEL:-auto}
+      - TONAL_PITCH_MAX_SECONDS=${TONAL_PITCH_MAX_SECONDS:-45}
+      - TONAL_TEMPO_MAX_SECONDS=${TONAL_TEMPO_MAX_SECONDS:-120}
     ports:
       - "8000:8000"
+    gpus: all
+    runtime: nvidia
     volumes:
       - essentia-models:/app/models
     networks:
       - essentia-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.essentia.rule=Host(`essentia.v1su4.dev`)"
