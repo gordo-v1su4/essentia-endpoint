@@ -32,7 +32,7 @@ from services.analysis import (
 )
 
 # Configuration
-API_VERSION = "4.0.1"
+API_VERSION = "4.0.2"
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
 # Default to '*' for easiest testing, user can override in Coolify

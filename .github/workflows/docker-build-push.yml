@@ -31,7 +31,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          BASE_VERSION=$(grep 'API_VERSION = "' main.py | sed 's/.*"\([^"]*\)".*/\1/' || echo "4.0.1")
+          BASE_VERSION=$(grep 'API_VERSION = "' main.py | sed 's/.*"\([^"]*\)".*/\1/' || echo "4.0.2")
           BUILD_VERSION="${BASE_VERSION}-build.${GITHUB_RUN_NUMBER}"
           SHA_TAG="sha-${GITHUB_SHA::7}"
           echo "base_version=$BASE_VERSION" >> $GITHUB_OUTPUT
