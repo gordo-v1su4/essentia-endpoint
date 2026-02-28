@@ -62,6 +62,14 @@ class EnhancedTonalAnalysis(BaseModel):
     tempo_cnn: Optional[float] = None
     pitch: Optional[PitchData] = None
 
+
+class TempoAnalysis(BaseModel):
+    tempo_cnn: Optional[float] = None
+
+
+class PitchAnalysis(BaseModel):
+    pitch: Optional[PitchData] = None
+
 class VocalAnalysis(BaseModel):
     vocal_presence: float
     label: str

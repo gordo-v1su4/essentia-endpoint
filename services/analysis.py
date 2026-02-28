@@ -623,26 +623,26 @@ def analyze_vocals_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[st
 # Enhanced tonal analysis
 # ---------------------------------------------------------------------------
 
-def analyze_tonal_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
-    """
-    Extract Key/Scale via KeyExtractor, deep-learning tempo via TempoCNN,
-    and pitch via CREPE.
-    """
-    models_dir = os.environ.get("ESSENTIA_MODELS_PATH", "/app/models")
-
-    # --- Key / Scale (existing) ---
+def analyze_tonal_key_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
+    """Extract key/scale/strength only."""
     try:
         key_extractor = es.KeyExtractor()
         results = key_extractor(audio)
-        key = results[0]
-        scale = results[1]
-        strength = _safe_float(results[2])
+        return {
+            "key": results[0],
+            "scale": results[1],
+            "strength": _safe_float(results[2]),
+        }
     except Exception as e:
         print(f"Key analysis failed: {e}")
-        key, scale, strength = "Unknown", "Unknown", 0.0
+        return {"key": "Unknown", "scale": "Unknown", "strength": 0.0}
 
-    # --- TempoCNN ---
+
+def analyze_tonal_tempo_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
+    """Extract deep-learning tempo only (TempoCNN)."""
+    models_dir = os.environ.get("ESSENTIA_MODELS_PATH", "/app/models")
     tempo_cnn_value = None
+
     try:
         resample = es.Resample(inputSampleRate=sample_rate, outputSampleRate=11025, quality=0)
         audio_11k = resample(audio)
@@ -654,16 +654,20 @@ def analyze_tonal_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str
         if os.path.exists(tempo_model_path) and hasattr(es, 'TensorflowPredictTempoCNN'):
             model_tempo = es.TensorflowPredictTempoCNN(graphFilename=tempo_model_path)
             tempo_preds = model_tempo(audio_11k)
-            # TempoCNN returns a global BPM vector; pick the argmax bin
             mean_preds = np.mean(tempo_preds, axis=0)
-            # Bins map to 30-286 BPM (256 bins)
             bpm_range = np.linspace(30, 286, len(mean_preds))
             tempo_cnn_value = _safe_float(bpm_range[int(np.argmax(mean_preds))])
     except Exception as e:
         print(f"TempoCNN analysis failed: {e}")
 
-    # --- CREPE pitch ---
+    return {"tempo_cnn": tempo_cnn_value}
+
+
+def analyze_tonal_pitch_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
+    """Extract pitch only (CREPE mean voiced frequency/confidence)."""
+    models_dir = os.environ.get("ESSENTIA_MODELS_PATH", "/app/models")
     pitch_data = None
+
     try:
         crepe_model_path = os.path.join(models_dir, "crepe", "crepe-full-1.pb")
         if not os.path.exists(crepe_model_path):
@@ -673,20 +677,16 @@ def analyze_tonal_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str
         audio_16k = resample_16k(audio)
 
         if os.path.exists(crepe_model_path) and hasattr(es, 'TensorflowPredictCREPE'):
-            # TensorflowPredictCREPE returns (pitch_values, confidence_values)
             model_crepe = es.TensorflowPredictCREPE(graphFilename=crepe_model_path)
             crepe_out = model_crepe(audio_16k)
-            # crepe_out is typically (time, frequency, confidence) or just activations
             if isinstance(crepe_out, tuple) and len(crepe_out) >= 2:
                 frequencies = crepe_out[0]
                 confidences = crepe_out[1]
             else:
-                # Single array output: interpret as frequency activations
                 frequencies = crepe_out
                 confidences = np.ones(len(frequencies)) if hasattr(frequencies, '__len__') else np.array([1.0])
 
             if hasattr(frequencies, '__len__') and len(frequencies) > 0:
-                # Filter out unvoiced (low confidence) frames
                 freq_arr = np.array(frequencies)
                 conf_arr = np.array(confidences) if hasattr(confidences, '__len__') else np.array([float(confidences)])
                 voiced_mask = conf_arr > 0.3
@@ -700,10 +700,20 @@ def analyze_tonal_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str
     except Exception as e:
         print(f"CREPE pitch analysis failed: {e}")
 
+    return {"pitch": pitch_data}
+
+
+def analyze_tonal_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
+    """
+    Extract Key/Scale via KeyExtractor, deep-learning tempo via TempoCNN,
+    and pitch via CREPE.
+    """
+    key_result = analyze_tonal_key_logic(audio, sample_rate)
+    tempo_result = analyze_tonal_tempo_logic(audio, sample_rate)
+    pitch_result = analyze_tonal_pitch_logic(audio, sample_rate)
+
     return {
-        "key": key,
-        "scale": scale,
-        "strength": strength,
-        "tempo_cnn": tempo_cnn_value,
-        "pitch": pitch_data,
+        **key_result,
+        **tempo_result,
+        **pitch_result,
     }

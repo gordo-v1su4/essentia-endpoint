@@ -15,6 +15,7 @@ import os
 from api.models import (
     RhythmAnalysis, StructureAnalysis, EnhancedTonalAnalysis,
     FullAnalysis, ClassificationAnalysis, VocalAnalysis,
+    TonalAnalysis, TempoAnalysis, PitchAnalysis,
 )
 from api.auth import verify_api_key
 from services.analysis import (
@@ -23,6 +24,9 @@ from services.analysis import (
     analyze_structure_logic,
     analyze_classification_logic,
     analyze_tonal_logic,
+    analyze_tonal_key_logic,
+    analyze_tonal_tempo_logic,
+    analyze_tonal_pitch_logic,
     analyze_vocals_logic,
     ALL_CLASSIFICATION_FEATURES,
 )
@@ -135,6 +139,63 @@ async def analyze_tonal(
     try:
         audio = load_audio(tmp_path)
         return analyze_tonal_logic(audio)
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+@app.post("/analyze/tonal/key", response_model=TonalAnalysis, tags=["Analysis"])
+async def analyze_tonal_key(
+    file: UploadFile = File(...),
+    api_key: str = Security(verify_api_key)
+):
+    """Extract key, scale, and key strength only."""
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+        content = await file.read()
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    try:
+        audio = load_audio(tmp_path)
+        return analyze_tonal_key_logic(audio)
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+@app.post("/analyze/tonal/tempo", response_model=TempoAnalysis, tags=["Analysis"])
+async def analyze_tonal_tempo(
+    file: UploadFile = File(...),
+    api_key: str = Security(verify_api_key)
+):
+    """Extract deep-learning tempo only (TempoCNN)."""
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+        content = await file.read()
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    try:
+        audio = load_audio(tmp_path)
+        return analyze_tonal_tempo_logic(audio)
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+@app.post("/analyze/tonal/pitch", response_model=PitchAnalysis, tags=["Analysis"])
+async def analyze_tonal_pitch(
+    file: UploadFile = File(...),
+    api_key: str = Security(verify_api_key)
+):
+    """Extract pitch only (CREPE)."""
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+        content = await file.read()
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    try:
+        audio = load_audio(tmp_path)
+        return analyze_tonal_pitch_logic(audio)
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
