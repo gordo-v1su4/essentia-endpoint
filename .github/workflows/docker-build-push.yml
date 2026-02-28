@@ -45,13 +45,3 @@ jobs:
             gordov1su4/essentia-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  deploy-to-coolify:
-    needs: build-and-push
-    if: vars.ENABLE_COOLIFY_DEPLOY == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Coolify deployment
-        run: |
-          curl -fsS -X GET "${{ secrets.COOLIFY_WEBHOOK_URL }}" \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"
