@@ -12,6 +12,8 @@ services:
       - CORS_ORIGINS=https://essentia.v1su4.dev
       - API_KEYS=${API_KEYS}  # We'll set this in Portainer UI
       - ESSENTIA_MODELS_PATH=/app/models
+    ports:
+      - "8000:8000"
     volumes:
       - essentia-models:/app/models
     networks:
