@@ -15,12 +15,11 @@ services:
       - TONAL_CREPE_MODEL=${TONAL_CREPE_MODEL:-auto}
       - TONAL_PITCH_MAX_SECONDS=${TONAL_PITCH_MAX_SECONDS:-45}
       - TONAL_TEMPO_MAX_SECONDS=${TONAL_TEMPO_MAX_SECONDS:-120}
-    # REMOVE the "ports" section - Traefik handles the traffic now
     gpus: all
     volumes:
       - essentia-models:/app/models
     networks:
-      - essentia-network:  # Connect to the global Traefik network
+      - essentia-network  # <--- This MUST be indented under 'api'
     deploy:
       resources:
         reservations:
@@ -41,7 +40,7 @@ services:
 
 networks:
   essentia-network:
-    external: true  # This tells Docker to use the network from the Traefik stack
+    external: true  # <--- This connects to the network created by your OLD Traefik
 
 volumes:
   essentia-models:
