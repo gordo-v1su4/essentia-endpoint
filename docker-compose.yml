@@ -19,7 +19,7 @@ services:
     volumes:
       - essentia-models:/app/models
     networks:
-      - essentia-network  # <--- This MUST be indented under 'api'
+      - traefik-public  # <--- CHANGED to traefik-public
     deploy:
       resources:
         reservations:
@@ -39,8 +39,8 @@ services:
       - "traefik.http.routers.essentia-http.middlewares=https-redirect"
 
 networks:
-  essentia-network:
-    external: true  # <--- This connects to the network created by your OLD Traefik
+  traefik-public:       # <--- CHANGED to traefik-public
+    external: true      # <--- This looks for the network created by your traefik-global stack
 
 volumes:
   essentia-models:
