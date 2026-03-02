@@ -20,7 +20,7 @@ services:
     volumes:
       - essentia-models:/app/models
     networks:
-      - traefik-public  # Connect to the global Traefik network
+      - essentia-network:  # Connect to the global Traefik network
     deploy:
       resources:
         reservations:
@@ -40,7 +40,7 @@ services:
       - "traefik.http.routers.essentia-http.middlewares=https-redirect"
 
 networks:
-  traefik-public:
+  essentia-network:
     external: true  # This tells Docker to use the network from the Traefik stack
 
 volumes:
