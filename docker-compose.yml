@@ -15,11 +15,11 @@ services:
       - TONAL_CREPE_MODEL=${TONAL_CREPE_MODEL:-auto}
       - TONAL_PITCH_MAX_SECONDS=${TONAL_PITCH_MAX_SECONDS:-45}
       - TONAL_TEMPO_MAX_SECONDS=${TONAL_TEMPO_MAX_SECONDS:-120}
+    ports:
+      - "18000:8000"
     gpus: all
     volumes:
       - essentia-models:/app/models
-    networks:
-      - traefik-public  # <--- CHANGED to traefik-public
     deploy:
       resources:
         reservations:
@@ -27,20 +27,6 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.essentia.rule=Host(`essentia.v1su4.dev`)"
-      - "traefik.http.routers.essentia.entrypoints=websecure"
-      - "traefik.http.routers.essentia.tls.certresolver=letsencrypt"
-      - "traefik.http.services.essentia.loadbalancer.server.port=8000"
-      - "traefik.http.routers.essentia-http.rule=Host(`essentia.v1su4.dev`)"
-      - "traefik.http.routers.essentia-http.entrypoints=web"
-      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.essentia-http.middlewares=https-redirect"
-
-networks:
-  traefik-public:       # <--- CHANGED to traefik-public
-    external: true      # <--- This looks for the network created by your traefik-global stack
 
 volumes:
   essentia-models:
