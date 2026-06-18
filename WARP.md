@@ -132,13 +132,13 @@ All endpoints accept audio files via multipart/form-data:
 
 ## Deployment
 
-### Coolify Deployment (Recommended)
-See COOLIFY.md for detailed instructions. Key points:
+### Portainer Deployment (Recommended)
+See docs/PORTAINER.md for detailed instructions. Key points:
 - Use GitHub repository deployment for auto-updates
 - Set build context to repository root (`.`)
 - Dockerfile auto-detected
 - Configure persistent volume for `/app/models` (models downloaded on first run via entrypoint.sh)
-- Always use .yaml extension for Coolify configs (not .yml)
+- Use the Portainer stack/service environment for runtime variables
 
 ### Docker Considerations
 - Base image: nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04 (GPU support)
@@ -188,7 +188,7 @@ User prefers `uv` for virtual environment management (not pip/venv directly).
 ## Related Documentation
 
 - README.md: Quick start and API endpoint documentation
-- COOLIFY.md: Detailed Coolify deployment guide with GitHub integration
+- docs/PORTAINER.md: Detailed Portainer/home-server deployment guide
 - DEPLOYMENT.md: Environment variables and deployment checklist
 - MODELS_SETUP.md: Model download instructions and EDM-specific recommendations
 - CORS_FIX.md: CORS troubleshooting guide

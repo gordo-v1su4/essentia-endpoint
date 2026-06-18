@@ -38,7 +38,7 @@ RUN sed -i 's/\r$//' /app/entrypoint.sh && \
 # Expose port (default 8000, can be overridden)
 EXPOSE 8000
 
-# Health check tuned for orchestrators like Coolify
+# Health check tuned for orchestrators like Portainer/Docker
 HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=12 \
     CMD curl -fsS --max-time 3 http://127.0.0.1:8000/health || exit 1
 
