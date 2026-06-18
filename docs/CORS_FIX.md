@@ -16,7 +16,7 @@ CORS_ORIGINS=*
 CORS_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 ```
 
-Set in your `.env`, docker-compose.yml, or Coolify environment variables.
+Set in your `.env`, `docker-compose.yml`, or Portainer stack/service environment variables.
 
 ## Testing
 

@@ -22,7 +22,7 @@ API at `http://localhost:8000`.
 |------|-----|
 | Docker Compose | `http://localhost:7000` |
 | Local dev (uv) | `http://localhost:8000` |
-| Production (Coolify) | `https://your-domain.com` |
+| Production (Portainer) | `https://essentia.v1su4.dev` |
 
 ## Environment Variables
 
@@ -36,15 +36,15 @@ API at `http://localhost:8000`.
 | `ESSENTIA_MODELS_PATH` | `/app/models` | TensorFlow models directory |
 | `TF_CPP_MIN_LOG_LEVEL` | `3` | Suppress TF logs |
 
-## Coolify
+## Portainer / home server
 
-1. Connect your GitHub repo in Coolify
-2. Build context: `.` (project root)
-3. Set environment variables (`API_KEYS`, `CORS_ORIGINS`, `METRICS_TOKEN` if observability is enabled)
-4. Add persistent volume for `/app/models`
-5. Deploy — Coolify auto-detects the Dockerfile
+1. Manage the service from Portainer on the home-server Docker lane.
+2. Use the stack/service environment for `API_KEYS`, `CORS_ORIGINS`, and optional `METRICS_TOKEN`.
+3. Keep the `essentia-models` Docker volume mounted at `/app/models`.
+4. Expose container port `8000` on host port `18000`.
+5. Use `https://essentia.v1su4.dev` for public docs/health and `http://100.121.236.75:18000` for internal server-to-server uploads.
 
-See [COOLIFY.md](COOLIFY.md) for details.
+See [PORTAINER.md](PORTAINER.md) for details.
 
 ## Docker Hub
 
@@ -77,4 +77,4 @@ curl http://localhost:7000/health
 - [ ] `CORS_ORIGINS` set to frontend domain(s)
 - [ ] Persistent volume for `/app/models`
 - [ ] `/health` endpoint responding
-- [ ] SSL via reverse proxy (Coolify/nginx/traefik)
+- [ ] SSL via reverse proxy/Tailscale/Portainer host routing

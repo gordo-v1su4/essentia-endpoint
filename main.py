@@ -69,7 +69,7 @@ API_VERSION = "4.0.2"
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
 METRICS_TOKEN = os.getenv("METRICS_TOKEN", "").strip()
-# Default to '*' for easiest testing, user can override in Coolify
+# Default to '*' for easiest testing; override in Portainer or local env
 CORS_ORIGINS_STR = os.getenv("CORS_ORIGINS") or os.getenv("CORS_ORIGIN") or "*"
 CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS_STR.split(",") if origin.strip()]
 

@@ -211,7 +211,7 @@ docs/openapi.json        OpenAPI 3.1 schema
 
 ### Cloud platforms
 
-Works with AWS ECS/Fargate, Google Cloud Run, Azure Container Instances, DigitalOcean App Platform, or Coolify.
+Production currently runs self-hosted via Docker/Portainer on the home-server lane. Other Docker platforms can run the same image, but Portainer is the documented path here.
 
 ## Documentation
 
