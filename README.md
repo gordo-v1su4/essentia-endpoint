@@ -138,6 +138,13 @@ All of the above combined in a single response.
 {"status": "ok", "version": "3.0.1"}
 ```
 
+### `GET /internal/metrics`
+
+Internal Prometheus endpoint for Grafana and Prometheus.
+
+- requires `Authorization: Bearer <METRICS_TOKEN>`
+- returns `404` when `METRICS_TOKEN` is unset
+
 ### Protected vs Public
 
 | Protected (API key required) | Public |
@@ -173,6 +180,7 @@ docker-compose up -d --build
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `API_KEYS` | (required) | Comma-separated valid API keys |
+| `METRICS_TOKEN` | unset | Bearer token for the internal Prometheus scrape endpoint |
 | `API_PORT` | `8000` | Container port |
 | `EXTERNAL_PORT` | `7000` | Host port (docker-compose) |
 | `CORS_ORIGINS` | `*` | Comma-separated allowed origins |

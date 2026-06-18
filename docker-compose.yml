@@ -8,7 +8,8 @@ services:
       - API_HOST=0.0.0.0
       - API_PORT=8000
       - CORS_ORIGINS=https://essentia.v1su4.dev
-      - API_KEYS=${API_KEYS}
+      - API_KEYS=${API_KEYS}  # We'll set this in Portainer UI
+      - METRICS_TOKEN=${METRICS_TOKEN}  # Internal Prometheus scrape token
       - ESSENTIA_MODELS_PATH=/app/models
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility

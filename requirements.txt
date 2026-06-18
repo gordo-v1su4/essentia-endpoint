@@ -3,3 +3,4 @@ uvicorn[standard]>=0.32.0
 essentia-tensorflow>=2.1b6.dev778
 python-multipart>=0.0.12
 numpy>=2.0.0
+prometheus-client>=0.21.0

@@ -29,6 +29,7 @@ API at `http://localhost:8000`.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `API_KEYS` | (required) | Comma-separated valid API keys |
+| `METRICS_TOKEN` | unset | Bearer token for internal Prometheus scraping |
 | `API_PORT` | `8000` | Container port |
 | `EXTERNAL_PORT` | `7000` | Host port (docker-compose) |
 | `CORS_ORIGINS` | `*` | Comma-separated allowed origins |
@@ -39,7 +40,7 @@ API at `http://localhost:8000`.
 
 1. Connect your GitHub repo in Coolify
 2. Build context: `.` (project root)
-3. Set environment variables (`API_KEYS`, `CORS_ORIGINS`)
+3. Set environment variables (`API_KEYS`, `CORS_ORIGINS`, `METRICS_TOKEN` if observability is enabled)
 4. Add persistent volume for `/app/models`
 5. Deploy — Coolify auto-detects the Dockerfile
 
@@ -57,6 +58,7 @@ Then on server:
 docker pull gordov1su4/essentia-api:latest
 docker run -d -p 7000:8000 -v ./models:/app/models \
   -e API_KEYS=your_key \
+  -e METRICS_TOKEN=your_internal_metrics_token \
   -e CORS_ORIGINS=https://yourdomain.com \
   gordov1su4/essentia-api:latest
 ```
@@ -71,6 +73,7 @@ curl http://localhost:7000/health
 ## Production Checklist
 
 - [ ] `API_KEYS` set
+- [ ] `METRICS_TOKEN` set if Prometheus will scrape `/internal/metrics`
 - [ ] `CORS_ORIGINS` set to frontend domain(s)
 - [ ] Persistent volume for `/app/models`
 - [ ] `/health` endpoint responding
