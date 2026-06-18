@@ -328,15 +328,19 @@ def _get_effnet_embeddings(audio_16k: np.ndarray, models_dir: str):
     if not os.path.exists(genre_model_path) or not hasattr(es, 'TensorflowPredictEffnetDiscogs'):
         return None, None
 
-    # Full activations (genre predictions)
+    # Full activations (400 Discogs genre predictions).
+    # TensorflowPredictEffnetDiscogs exposes the 400-class output at PartitionedCall:0
+    # and the 1280-wide embedding used by the downstream classifier heads at
+    # PartitionedCall:1. Keeping these reversed makes every *-discogs-effnet head fail
+    # with a TensorFlow 400-vs-1280 matrix shape mismatch.
     model_genre = es.TensorflowPredictEffnetDiscogs(
-        graphFilename=genre_model_path, output="PartitionedCall:1"
+        graphFilename=genre_model_path, output="PartitionedCall:0"
     )
     activations = model_genre(audio_16k)
 
     # Embeddings for classification heads
     model_embed = es.TensorflowPredictEffnetDiscogs(
-        graphFilename=genre_model_path, output="PartitionedCall:0"
+        graphFilename=genre_model_path, output="PartitionedCall:1"
     )
     embeddings = model_embed(audio_16k)
 
