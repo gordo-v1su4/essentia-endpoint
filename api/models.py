@@ -79,3 +79,7 @@ class FullAnalysis(RhythmAnalysis):
     classification: Optional[ClassificationAnalysis] = None
     tonal: Optional[EnhancedTonalAnalysis] = None
     vocals: Optional[VocalAnalysis] = None
+
+
+class FastAnalysis(RhythmAnalysis):
+    structure: StructureAnalysis

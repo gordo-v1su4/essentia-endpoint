@@ -4,18 +4,51 @@ Refactored for modularity and enhanced performance.
 
 Run with: uv run uvicorn main:app --reload --port 8000
 """
-from fastapi import FastAPI, UploadFile, File, HTTPException, Security, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Security, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import tempfile
 import uvicorn
 import os
+import secrets
+import time
+
+try:
+    from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
+except ModuleNotFoundError:
+    CONTENT_TYPE_LATEST = "text/plain; version=0.0.4; charset=utf-8"
+    generate_latest = None
+
+    class _NoopMetric:
+        def labels(self, **_kwargs):
+            return self
+
+        def inc(self):
+            return None
+
+        def dec(self):
+            return None
+
+        def observe(self, _value):
+            return None
+
+    class Counter(_NoopMetric):
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+    class Gauge(_NoopMetric):
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+    class Histogram(_NoopMetric):
+        def __init__(self, *_args, **_kwargs):
+            pass
 
 # Internal imports
 from api.models import (
     RhythmAnalysis, StructureAnalysis, EnhancedTonalAnalysis,
     FullAnalysis, ClassificationAnalysis, VocalAnalysis,
-    TonalAnalysis, TempoAnalysis, PitchAnalysis,
+    TonalAnalysis, TempoAnalysis, PitchAnalysis, FastAnalysis,
 )
 from api.auth import verify_api_key
 from services.analysis import (
@@ -35,9 +68,28 @@ from services.analysis import (
 API_VERSION = "4.0.2"
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
+METRICS_TOKEN = os.getenv("METRICS_TOKEN", "").strip()
 # Default to '*' for easiest testing, user can override in Coolify
 CORS_ORIGINS_STR = os.getenv("CORS_ORIGINS") or os.getenv("CORS_ORIGIN") or "*"
 CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS_STR.split(",") if origin.strip()]
+
+REQUEST_COUNT = Counter(
+    "essentia_http_requests_total",
+    "Total HTTP requests handled by the Essentia API.",
+    ["handler", "method", "status"],
+)
+REQUEST_LATENCY = Histogram(
+    "essentia_http_request_duration_seconds",
+    "Request latency for the Essentia API.",
+    ["handler", "method"],
+    buckets=(0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300),
+)
+REQUESTS_IN_PROGRESS = Gauge(
+    "essentia_http_requests_in_progress",
+    "In-flight Essentia API requests.",
+    ["handler", "method"],
+)
+SKIP_METRICS_PATHS = frozenset(("/internal/metrics",))
 
 app = FastAPI(
     title="Audio Analysis API",
@@ -53,6 +105,39 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def _verify_metrics_token(request: Request) -> None:
+    if not METRICS_TOKEN:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    authorization = request.headers.get("authorization", "")
+    expected = f"Bearer {METRICS_TOKEN}"
+    if not secrets.compare_digest(authorization, expected):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+@app.middleware("http")
+async def instrument_requests(request: Request, call_next):
+    handler = request.url.path or "/"
+    method = request.method
+
+    if handler in SKIP_METRICS_PATHS:
+        return await call_next(request)
+
+    start = time.perf_counter()
+    status_code = "500"
+    REQUESTS_IN_PROGRESS.labels(handler=handler, method=method).inc()
+
+    try:
+        response = await call_next(request)
+        status_code = str(response.status_code)
+        return response
+    finally:
+        duration = time.perf_counter() - start
+        REQUEST_LATENCY.labels(handler=handler, method=method).observe(duration)
+        REQUEST_COUNT.labels(handler=handler, method=method, status=status_code).inc()
+        REQUESTS_IN_PROGRESS.labels(handler=handler, method=method).dec()
 
 
 @app.post("/analyze/rhythm", response_model=RhythmAnalysis, tags=["Analysis"])
@@ -218,6 +303,35 @@ async def analyze_vocals(
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
+@app.post("/analyze/fast", response_model=FastAnalysis, tags=["Analysis"])
+async def analyze_fast(
+    file: UploadFile = File(...),
+    api_key: str = Security(verify_api_key)
+):
+    """Fast first-pass analysis for interactive editing.
+
+    Returns only rhythm, energy, and song structure. This is enough to build
+    beat/section previews without waking classifier, tonal, pitch, or vocal
+    TensorFlow models on the blocking upload path.
+    """
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+        content = await file.read()
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    try:
+        audio = load_audio(tmp_path)
+        rhythm = analyze_rhythm_logic(audio)
+        structure = analyze_structure_logic(audio)
+
+        return {
+            **rhythm,
+            "structure": structure,
+        }
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
 @app.post("/analyze/full", response_model=FullAnalysis, tags=["Analysis"])
 async def analyze_full(
     file: UploadFile = File(...),
@@ -252,6 +366,15 @@ async def analyze_full(
 async def health():
     """Check API health status."""
     return {"status": "ok", "version": API_VERSION}
+
+
+@app.get("/internal/metrics", include_in_schema=False, tags=["System"])
+async def internal_metrics(request: Request):
+    """Expose Prometheus metrics for internal scraping only."""
+    _verify_metrics_token(request)
+    if generate_latest is None:
+        raise HTTPException(status_code=503, detail="Prometheus metrics dependency is not installed")
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 if __name__ == "__main__":
     uvicorn.run(app, host=API_HOST, port=API_PORT)

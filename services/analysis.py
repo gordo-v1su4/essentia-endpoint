@@ -7,6 +7,26 @@ import numpy as np
 from typing import List, Dict, Any, Optional, Set
 from fastapi import HTTPException
 import math
+import threading
+
+
+_MODEL_CACHE: Dict[str, Any] = {}
+_MODEL_CACHE_LOCK = threading.Lock()
+
+
+def _get_cached_model(cache_key: str, factory):
+    """Return a lazily constructed Essentia/TensorFlow model instance.
+
+    TensorFlow graph construction is expensive and logs a "Successfully loaded
+    graph file" line every time. Keep model objects warm for the API process so
+    repeated analyses reuse the same graphs instead of reloading them per request.
+    """
+    with _MODEL_CACHE_LOCK:
+        model = _MODEL_CACHE.get(cache_key)
+        if model is None:
+            model = factory()
+            _MODEL_CACHE[cache_key] = model
+        return model
 
 
 def _find_model(base_dir: str, filename: str) -> Optional[str]:
@@ -333,14 +353,20 @@ def _get_effnet_embeddings(audio_16k: np.ndarray, models_dir: str):
     # and the 1280-wide embedding used by the downstream classifier heads at
     # PartitionedCall:1. Keeping these reversed makes every *-discogs-effnet head fail
     # with a TensorFlow 400-vs-1280 matrix shape mismatch.
-    model_genre = es.TensorflowPredictEffnetDiscogs(
-        graphFilename=genre_model_path, output="PartitionedCall:0"
+    model_genre = _get_cached_model(
+        f"effnet-discogs:{genre_model_path}:PartitionedCall:0",
+        lambda: es.TensorflowPredictEffnetDiscogs(
+            graphFilename=genre_model_path, output="PartitionedCall:0"
+        ),
     )
     activations = model_genre(audio_16k)
 
     # Embeddings for classification heads
-    model_embed = es.TensorflowPredictEffnetDiscogs(
-        graphFilename=genre_model_path, output="PartitionedCall:1"
+    model_embed = _get_cached_model(
+        f"effnet-discogs:{genre_model_path}:PartitionedCall:1",
+        lambda: es.TensorflowPredictEffnetDiscogs(
+            graphFilename=genre_model_path, output="PartitionedCall:1"
+        ),
     )
     embeddings = model_embed(audio_16k)
 
@@ -356,13 +382,19 @@ def _get_musicnn_embeddings(audio_16k: np.ndarray, models_dir: str):
     if not os.path.exists(musicnn_path) or not hasattr(es, 'TensorflowPredictMusiCNN'):
         return None, None
 
-    model_tags = es.TensorflowPredictMusiCNN(
-        graphFilename=musicnn_path, output="model/Sigmoid"
+    model_tags = _get_cached_model(
+        f"musicnn:{musicnn_path}:model/Sigmoid",
+        lambda: es.TensorflowPredictMusiCNN(
+            graphFilename=musicnn_path, output="model/Sigmoid"
+        ),
     )
     tag_activations = model_tags(audio_16k)
 
-    model_embed = es.TensorflowPredictMusiCNN(
-        graphFilename=musicnn_path, output="model/dense/BiasAdd"
+    model_embed = _get_cached_model(
+        f"musicnn:{musicnn_path}:model/dense/BiasAdd",
+        lambda: es.TensorflowPredictMusiCNN(
+            graphFilename=musicnn_path, output="model/dense/BiasAdd"
+        ),
     )
     embeddings = model_embed(audio_16k)
 
@@ -391,8 +423,11 @@ def _run_classification_head(embeddings, model_path: Optional[str], input_name: 
             continue
         seen.add(key)
         try:
-            model = es.TensorflowPredict2D(
-                graphFilename=model_path, input=in_name, output=out_name
+            model = _get_cached_model(
+                f"tensorflow-predict-2d:{model_path}:{in_name}:{out_name}",
+                lambda in_name=in_name, out_name=out_name: es.TensorflowPredict2D(
+                    graphFilename=model_path, input=in_name, output=out_name
+                ),
             )
             return model(embeddings)
         except Exception as e:
@@ -656,7 +691,10 @@ def analyze_tonal_tempo_logic(audio: np.ndarray, sample_rate: int = 44100) -> Di
             tempo_model_path = os.path.join(models_dir, "tempocnn", "deepsquare-k16-3.pb")
 
         if os.path.exists(tempo_model_path) and hasattr(es, 'TensorflowPredictTempoCNN'):
-            model_tempo = es.TensorflowPredictTempoCNN(graphFilename=tempo_model_path)
+            model_tempo = _get_cached_model(
+                f"tempo-cnn:{tempo_model_path}",
+                lambda: es.TensorflowPredictTempoCNN(graphFilename=tempo_model_path),
+            )
             tempo_preds = model_tempo(audio_11k)
             mean_preds = np.mean(tempo_preds, axis=0)
             bpm_range = np.linspace(30, 286, len(mean_preds))
@@ -681,7 +719,10 @@ def analyze_tonal_pitch_logic(audio: np.ndarray, sample_rate: int = 44100) -> Di
         audio_16k = resample_16k(audio)
 
         if os.path.exists(crepe_model_path) and hasattr(es, 'TensorflowPredictCREPE'):
-            model_crepe = es.TensorflowPredictCREPE(graphFilename=crepe_model_path)
+            model_crepe = _get_cached_model(
+                f"crepe:{crepe_model_path}",
+                lambda: es.TensorflowPredictCREPE(graphFilename=crepe_model_path),
+            )
             crepe_out = model_crepe(audio_16k)
             if isinstance(crepe_out, tuple) and len(crepe_out) >= 2:
                 frequencies = crepe_out[0]
