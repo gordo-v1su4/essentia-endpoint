@@ -32,7 +32,9 @@ docker build -t essentia-api .        # Standalone build
 python verify_setup.py                # Tests imports and basic rhythm analysis
 ```
 
-There is no test suite — `verify_setup.py` is the only automated check.
+Run the lightweight Studio contract/lifecycle suite with
+`python -m unittest discover -s tests -p 'test_studio*.py' -v`.
+It fakes inference; `verify_setup.py` checks local analysis dependencies separately.
 
 ## Architecture
 
@@ -58,11 +60,12 @@ main.py                  FastAPI app, endpoint definitions, CORS setup
 - `POST /analyze/tonal` — Key, scale, strength + TempoCNN tempo + CREPE pitch
 - `POST /analyze/vocals` — Voice/instrumental detection with confidence
 - `POST /analyze/full` — All of the above combined
+- `POST /analyze/studio/jobs` and `GET /analyze/studio/jobs/{id}` — additive durable Studio analysis jobs in this same FastAPI service; see `docs/STUDIO_AUDIO_JOBS.md`
 - `GET /health` — Health check (public, no auth)
 
 ### Analysis details
 - **Rhythm**: RhythmExtractor2013 (multifeature), dual-ODF onset detection (HFC + Complex), high-res RMS energy curve (512 hop size for ~86Hz / 60fps video sync)
-- **Structure**: MFCC-based segmentation via SBic with heuristic fallback; section labels assigned by position + energy relative to mean
+- **Structure**: Legacy SBic endpoints use detected MFCC change points and position/energy labels; failure returns422, with no duration-based fallback. Studio jobs use CUDA-only all-in-one functional structure and preserve raw model labels.
 - **Classification**: TensorFlow models resampled to 16kHz — EffNetDiscogs (genres + embeddings for classification heads), EmoMusic (mood), MusiCNN (tags). Selectable features: genre, mood, tags, danceability, approachability, engagement, acoustic_electronic, bright_dark, instrument, tonal_atonal.
 - **Vocals**: EffNet embeddings + voice_instrumental classification head
 - **Tonal**: Essentia KeyExtractor + TempoCNN (deep learning tempo at 11025Hz) + CREPE (pitch detection at 16kHz)
@@ -83,9 +86,9 @@ Located in `models/` directory (Docker volume mount). Auto-downloaded on first c
 
 ## Important Patterns
 
-- **Graceful degradation**: Structure analysis falls back to heuristic if SBic fails; classification handles missing TF models; tonal returns "Unknown" on failure.
+- **Failure behavior**: SBic structure fails explicitly when usable boundaries are missing. Studio never substitutes heuristic structure or CPU/MPS model inference. Studio storage/startup errors disable only Studio routes (503), preserving legacy API availability. Classification and tonal legacy behavior is unchanged.
 - **Temp file cleanup**: Audio uploads written to temp files and deleted immediately after processing.
-- **Section labeling heuristic**: intro (0-15% position), outro (80%+), chorus (>110% mean energy), verse (<110%), bridge (50-75% with different energy).
+- **Legacy section labeling heuristic**: First/last-position intro/outro and energy-relative verse/chorus labels are estimates. This heuristic does not apply to the dedicated Studio all-in-one pipeline.
 - Python 3.11 required. Docker base image is NVIDIA CUDA 11.8.0 + cuDNN8.
 
 ## Deployment

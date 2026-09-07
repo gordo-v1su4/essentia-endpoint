@@ -7,12 +7,14 @@ Run with: uv run uvicorn main:app --reload --port 8000
 from fastapi import FastAPI, UploadFile, File, HTTPException, Security, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
+from contextlib import asynccontextmanager
 import asyncio
 import tempfile
 import uvicorn
 import os
 import secrets
 import time
+import logging
 
 try:
     from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
@@ -52,6 +54,8 @@ from api.models import (
     TonalAnalysis, TempoAnalysis, PitchAnalysis, FastAnalysis,
 )
 from api.auth import verify_api_key
+from api.studio_routes import router as studio_router, StudioUploadLimits
+from services.studio_jobs import StudioJobs, JobSettings
 from services.allin1_structure import (
     analyze_structure_allin1_logic,
     AllInOneStructureError,
@@ -97,11 +101,41 @@ REQUESTS_IN_PROGRESS = Gauge(
 )
 SKIP_METRICS_PATHS = frozenset(("/internal/metrics",))
 
+@asynccontextmanager
+async def lifespan(application):
+    manager = None
+    application.state.studio_jobs = None
+    try:
+        manager = StudioJobs(JobSettings.from_env())
+        manager.start()
+        application.state.studio_jobs = manager
+    except Exception as exc:
+        # Optional Studio storage/locking must never take legacy API routes down.
+        logging.getLogger(__name__).error(
+            "Studio jobs disabled at startup (%s); legacy endpoints remain available.",
+            type(exc).__name__,
+        )
+        if manager is not None:
+            try:
+                manager.stop()
+            except Exception:
+                pass
+        manager = None
+    try:
+        yield
+    finally:
+        if manager is not None:
+            manager.stop()
+
+
 app = FastAPI(
     title="Audio Analysis API",
     version=API_VERSION,
-    description="High-quality music analysis using Essentia C++ core via Python."
+    description="High-quality music analysis using Essentia C++ core via Python.",
+    lifespan=lifespan,
 )
+app.include_router(studio_router)
+app.add_middleware(StudioUploadLimits)
 
 # CORS Configuration
 app.add_middleware(
@@ -126,6 +160,8 @@ def _verify_metrics_token(request: Request) -> None:
 @app.middleware("http")
 async def instrument_requests(request: Request, call_next):
     handler = request.url.path or "/"
+    if handler.startswith("/analyze/studio/jobs/"):
+        handler = "/analyze/studio/jobs/{job_id}"
     method = request.method
 
     if handler in SKIP_METRICS_PATHS:

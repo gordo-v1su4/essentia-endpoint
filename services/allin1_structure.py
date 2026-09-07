@@ -7,11 +7,22 @@ See https://github.com/mir-aidj/all-in-one
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any, Dict, List
 
 
 class AllInOneStructureError(Exception):
     """Raised when all-in-one cannot produce usable segments."""
+
+
+class AllInOneCudaRequiredError(AllInOneStructureError):
+    """The Studio pipeline never silently runs models on CPU/MPS."""
+
+
+def require_studio_cuda() -> str:
+    if os.getenv("ALLIN1_DEVICE", "").strip().lower() not in ("", "cuda") or not _cuda_usable():
+        raise AllInOneCudaRequiredError("Studio requires usable CUDA and ALLIN1_DEVICE=cuda; CPU/MPS inference is disabled.")
+    return "cuda"
 
 
 _SKIP_LABELS = frozenset({"start", "end"})
@@ -94,7 +105,7 @@ def _merge_adjacent_sections(sections: List[Dict[str, Any]]) -> List[Dict[str, A
     return merged
 
 
-def analyze_structure_allin1_logic(file_path: str) -> Dict[str, Any]:
+def analyze_structure_allin1_logic(file_path: str, *, workspace: Path | None = None, preserve_labels: bool = False, require_cuda: bool = False) -> Dict[str, Any]:
     """
     Run all-in-one on a WAV/MP3 file path and map segments to StructureAnalysis shape.
     """
@@ -105,16 +116,21 @@ def analyze_structure_allin1_logic(file_path: str) -> Dict[str, Any]:
             "allin1 is not installed in this container. Rebuild essentia-endpoint with all-in-one deps."
         ) from exc
 
-    device = _resolve_device()
+    device = require_studio_cuda() if require_cuda else _resolve_device()
     model = os.getenv("ALLIN1_MODEL", "harmonix-all").strip() or "harmonix-all"
     print(f"[Structure] allin1 start path={file_path} device={device} model={model}")
 
     try:
+        options = {} if workspace is None else {
+            "demix_dir": workspace / "demix", "spec_dir": workspace / "spec",
+            "multiprocess": False,
+        }
         result = allin1.analyze(
             paths=file_path,
             model=model,
             device=device,
             keep_byproducts=False,
+            **options,
         )
     except Exception as exc:
         raise AllInOneStructureError(f"all-in-one analysis failed: {exc}") from exc
@@ -124,22 +140,29 @@ def analyze_structure_allin1_logic(file_path: str) -> Dict[str, Any]:
     for segment in raw_segments:
         label = _normalize_label(getattr(segment, "label", "") or "")
         if label is None:
-            continue
+            if not preserve_labels:
+                continue
+            # Model start/end intervals represent nonmusical margins, not an
+            # inferred intro/outro. Studio keeps their exact time coverage.
+            label = "section"
         start = float(getattr(segment, "start", 0.0))
         end = float(getattr(segment, "end", start))
         if end <= start:
             continue
-        sections.append(
-            {
+        section = {
                 "start": start,
                 "end": end,
                 "label": label,
                 "duration": end - start,
                 "energy": 0.0,
             }
-        )
+        if preserve_labels:
+            section["original_label"] = getattr(segment, "label", "").strip().lower()
+        sections.append(section)
 
-    sections = _merge_adjacent_sections(sections)
+    # Studio keeps individual model intervals/raw labels (e.g. inst vs solo).
+    if not preserve_labels:
+        sections = _merge_adjacent_sections(sections)
     if not sections:
         raise AllInOneStructureError("all-in-one returned no functional segments.")
 
