@@ -34,7 +34,7 @@ If Hermes, `proxmox-home`, and this file disagree, check the live host and fix t
 | **Container** | `essentia-api` |
 | **Host port** | `18000` → container `8000` |
 | **Public URL** | `https://essentia.v1su4.dev` |
-| **Health** | `GET /health` → `{"status":"ok","version":"4.0.2"}` |
+| **Health** | `GET /health` → `{"status":"ok","version":"4.1.0"}` |
 | **Internal upload URL** | `http://192.168.8.222:18000` or Tailscale `http://100.118.78.13:18000` |
 
 Models volume: `essentia-models` at `/app/models`. GPU: NVIDIA passthrough on VM100 when enabled (`gpus: all` in compose).
@@ -85,7 +85,7 @@ curl https://essentia.v1su4.dev/health
 Expected:
 
 ```json
-{"status":"ok","version":"4.0.2"}
+{"status":"ok","version":"4.1.0"}
 ```
 
 ## API paths used by client apps

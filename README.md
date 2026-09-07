@@ -211,7 +211,7 @@ docs/openapi.json        OpenAPI 3.1 schema
 
 ### Cloud platforms
 
-Production currently runs self-hosted via Docker/Portainer on the home-server lane. Other Docker platforms can run the same image, but Portainer is the documented path here.
+Production runs on **VM100 `app-vm`** (Proxmox), managed in **Dockhand**. Public URL: `https://essentia.v1su4.dev`. Infra: Hermes notebook vault → **`proxmox-home`** repo → BWS for secrets. See [docs/DOCKHAND.md](docs/DOCKHAND.md).
 
 ## Documentation
 
