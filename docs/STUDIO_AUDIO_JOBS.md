@@ -51,7 +51,9 @@ The Dockerfile forces `NATTEN_WITH_CUDA=1`, builds for `NATTEN_CUDA_ARCH=8.9`
 (VM100's RTX 4090), and verifies the compiled library's `has_cuda()` at build
 time without needing a visible GPU. Other supported deployment hardware must
 set the matching `--build-arg NATTEN_CUDA_ARCH=...`; this CUDA 11.8 stack does
-not support every newer architecture. See the pinned
+not support every newer architecture. Compilation defaults to one worker to
+fit VM100's available memory; builders with more memory can override
+`--build-arg NATTEN_N_WORKERS=...`. See the pinned
 [NATTEN 0.17.1 build settings](https://github.com/SHI-Labs/NATTEN/blob/v0.17.1/setup.py)
 and [runtime capability check](https://github.com/SHI-Labs/NATTEN/blob/v0.17.1/src/natten/context.py).
 This preflight applies to Studio only; legacy endpoint behavior is unchanged.
