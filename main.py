@@ -7,6 +7,7 @@ Run with: uv run uvicorn main:app --reload --port 8000
 from fastapi import FastAPI, UploadFile, File, HTTPException, Security, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
+import asyncio
 import tempfile
 import uvicorn
 import os
@@ -195,9 +196,11 @@ async def analyze_structure_allin1(
         tmp_path = tmp.name
 
     try:
-        return analyze_structure_allin1_logic(tmp_path)
+        return await asyncio.to_thread(analyze_structure_allin1_logic, tmp_path)
     except AllInOneStructureError as e:
         raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"all-in-one internal error: {e}")
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
