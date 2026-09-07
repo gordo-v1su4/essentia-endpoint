@@ -1,6 +1,6 @@
 # Optimized Essentia + FastAPI with GPU support
 # This image includes libcudart and libcuda which TensorFlow needs
-FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
+FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
 # Install Python 3.11, git, curl, then uv via standalone installer (avoids COPY --from which can fail on overlayfs)
 RUN apt-get update && \
@@ -10,6 +10,9 @@ RUN apt-get update && \
     git \
     curl \
     ca-certificates \
+    ffmpeg \
+    cmake \
+    build-essential \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3.11 /usr/bin/python \
     && ln -sf /usr/bin/python3.11 /usr/bin/python3 \
@@ -21,6 +24,18 @@ RUN apt-get update && \
 WORKDIR /app
 COPY requirements.txt .
 RUN uv pip install --system --no-cache -r requirements.txt
+
+# all-in-one structure analysis (mir-aidj/all-in-one)
+RUN uv pip install --system --no-cache \
+    torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 \
+    --index-url https://download.pytorch.org/whl/cu118
+RUN uv pip install --system --no-cache "numpy>=1.24,<2" "setuptools==69.5.1" wheel packaging ninja cmake \
+    && git clone --depth 1 --branch v0.17.1 https://github.com/SHI-Labs/NATTEN.git /tmp/natten \
+    && cd /tmp/natten && MAX_JOBS=4 uv pip install --system --no-cache --no-build-isolation . \
+    && rm -rf /tmp/natten
+RUN uv pip install --system --no-cache git+https://github.com/CPJKU/madmom
+COPY requirements-allin1.txt .
+RUN uv pip install --system --no-cache -r requirements-allin1.txt
 
 # Copy application code
 WORKDIR /app
@@ -38,7 +53,7 @@ RUN sed -i 's/\r$//' /app/entrypoint.sh && \
 # Expose port (default 8000, can be overridden)
 EXPOSE 8000
 
-# Health check tuned for orchestrators like Portainer/Docker
+# Health check tuned for orchestrators like Dockhand/Docker
 HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=12 \
     CMD curl -fsS --max-time 3 http://127.0.0.1:8000/health || exit 1
 

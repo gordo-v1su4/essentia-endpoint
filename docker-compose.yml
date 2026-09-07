@@ -1,16 +1,17 @@
 services:
   api:
-    build:
-      context: https://github.com/gordo-v1su4/essentia-endpoint.git#main
+    image: ${ESSENTIA_IMAGE:-gordov1su4/essentia-api:4.1.0}
+    pull_policy: always
     container_name: essentia-api
     restart: unless-stopped
     environment:
       - API_HOST=0.0.0.0
       - API_PORT=8000
       - CORS_ORIGINS=https://essentia.v1su4.dev
-      - API_KEYS=${API_KEYS}  # We'll set this in Portainer UI
+      - API_KEYS=${API_KEYS}  # Set in Dockhand stack env or host .env
       - METRICS_TOKEN=${METRICS_TOKEN}  # Internal Prometheus scrape token
       - ESSENTIA_MODELS_PATH=/app/models
+      - ALLIN1_DEVICE=${ALLIN1_DEVICE:-cuda}
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - TONAL_CREPE_MODEL=${TONAL_CREPE_MODEL:-auto}

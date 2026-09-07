@@ -1,0 +1,39 @@
+# Local dev: build from this repo and run on Docker Desktop (CPU or GPU).
+#   docker compose -f docker-compose.local.yml up -d --build
+# API: http://localhost:7000/health
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: essentia-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - API_KEYS=${API_KEYS}
+      - ESSENTIA_MODELS_PATH=/app/models
+      # Unset = auto (cuda on 4090, cpu fallback on 5090 with cu118 torch). Set cuda on 4090 server deploy.
+      - ALLIN1_DEVICE=${ALLIN1_DEVICE:-}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ports:
+      - "${EXTERNAL_PORT:-7000}:8000"
+    volumes:
+      - essentia-models:/app/models
+      # Local dev: pick up API route changes without rebuilding the image.
+      - ./main.py:/app/main.py:ro
+      - ./services:/app/services:ro
+      - ./api:/app/api:ro
+
+volumes:
+  essentia-models:

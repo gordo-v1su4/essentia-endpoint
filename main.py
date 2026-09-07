@@ -51,10 +51,15 @@ from api.models import (
     TonalAnalysis, TempoAnalysis, PitchAnalysis, FastAnalysis,
 )
 from api.auth import verify_api_key
+from services.allin1_structure import (
+    analyze_structure_allin1_logic,
+    AllInOneStructureError,
+)
 from services.analysis import (
     load_audio,
     analyze_rhythm_logic,
     analyze_structure_logic,
+    StructureSegmentationError,
     analyze_classification_logic,
     analyze_tonal_logic,
     analyze_tonal_key_logic,
@@ -65,11 +70,11 @@ from services.analysis import (
 )
 
 # Configuration
-API_VERSION = "4.0.2"
+API_VERSION = "4.1.0"
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
 METRICS_TOKEN = os.getenv("METRICS_TOKEN", "").strip()
-# Default to '*' for easiest testing; override in Portainer or local env
+# Default to '*' for easiest testing; override in Dockhand or local env
 CORS_ORIGINS_STR = os.getenv("CORS_ORIGINS") or os.getenv("CORS_ORIGIN") or "*"
 CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS_STR.split(",") if origin.strip()]
 
@@ -172,6 +177,27 @@ async def analyze_structure(
     try:
         audio = load_audio(tmp_path)
         return analyze_structure_logic(audio)
+    except StructureSegmentationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+@app.post("/analyze/structure/allin1", response_model=StructureAnalysis, tags=["Analysis"])
+async def analyze_structure_allin1(
+    file: UploadFile = File(...),
+    api_key: str = Security(verify_api_key)
+):
+    """Functional song structure (intro/verse/chorus/...) via mir-aidj/all-in-one."""
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+        content = await file.read()
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    try:
+        return analyze_structure_allin1_logic(tmp_path)
+    except AllInOneStructureError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
@@ -322,7 +348,10 @@ async def analyze_fast(
     try:
         audio = load_audio(tmp_path)
         rhythm = analyze_rhythm_logic(audio)
-        structure = analyze_structure_logic(audio)
+        try:
+            structure = analyze_structure_logic(audio)
+        except StructureSegmentationError as e:
+            raise HTTPException(status_code=422, detail=str(e))
 
         return {
             **rhythm,
@@ -346,7 +375,10 @@ async def analyze_full(
     try:
         audio = load_audio(tmp_path)
         rhythm = analyze_rhythm_logic(audio)
-        structure = analyze_structure_logic(audio)
+        try:
+            structure = analyze_structure_logic(audio)
+        except StructureSegmentationError as e:
+            raise HTTPException(status_code=422, detail=str(e))
         classification = analyze_classification_logic(audio)
         tonal = analyze_tonal_logic(audio)
         vocals = analyze_vocals_logic(audio)

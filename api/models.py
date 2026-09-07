@@ -24,6 +24,9 @@ class RhythmAnalysis(BaseModel):
 class StructureAnalysis(BaseModel):
     sections: List[Section]
     boundaries: List[float]
+    """How boundaries were derived (`sbic`, `allin1`, etc.). Failures are HTTP 422."""
+    source: str = "unknown"
+    analyzed_duration_s: float = 0.0
 
 class ClassificationResult(BaseModel):
     label: str

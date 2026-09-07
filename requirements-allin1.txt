@@ -1,0 +1,3 @@
+# all-in-one music structure (mir-aidj/all-in-one). Installed after PyTorch + NATTEN in Dockerfile.
+numpy>=1.24,<2
+allin1>=1.1.0
