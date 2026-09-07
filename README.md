@@ -215,6 +215,8 @@ Production runs on **VM100 `app-vm`** (Proxmox), managed in **Dockhand**. Public
 
 ## Documentation
 
+- **[Studio integration and migration guide](docs/STUDIO_INTEGRATION.md)**: move clients from `/analyze/fast` to asynchronous Studio analysis, including input formats, response mapping and a server-side JavaScript example.
+- **[Studio API contract and operations](docs/STUDIO_AUDIO_JOBS.md)**: durable jobs, CUDA requirements, limits and compatibility.
 - **Swagger UI**: `/docs`
 - **ReDoc**: `/redoc`
 - **OpenAPI schema**: [`docs/openapi.json`](docs/openapi.json)

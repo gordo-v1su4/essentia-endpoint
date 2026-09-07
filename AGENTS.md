@@ -63,6 +63,11 @@ main.py                  FastAPI app, endpoint definitions, CORS setup
 - `POST /analyze/studio/jobs` and `GET /analyze/studio/jobs/{id}` — additive durable Studio analysis jobs in this same FastAPI service; see `docs/STUDIO_AUDIO_JOBS.md`
 - `GET /health` — Health check (public, no auth)
 
+For agents updating a consuming project from `/analyze/fast`, follow
+[the Studio migration guide](docs/STUDIO_INTEGRATION.md). It covers request and
+response changes, supported audio inputs, durable polling, and client acceptance.
+Do not replace only the URL or expose the service API key to browser clients.
+
 ### Analysis details
 - **Rhythm**: RhythmExtractor2013 (multifeature), dual-ODF onset detection (HFC + Complex), high-res RMS energy curve (512 hop size for ~86Hz / 60fps video sync)
 - **Structure**: Legacy SBic endpoints use detected MFCC change points and position/energy labels; failure returns422, with no duration-based fallback. Studio jobs use CUDA-only all-in-one functional structure and preserve raw model labels.

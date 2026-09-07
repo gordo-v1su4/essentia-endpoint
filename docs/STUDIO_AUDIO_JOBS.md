@@ -1,5 +1,7 @@
 # Studio audio jobs
 
+Updating another project? Start with the [client integration and migration guide](STUDIO_INTEGRATION.md).
+
 `POST /analyze/studio/jobs` accepts one multipart `file`, authenticated with the
 existing `X-API-Key`, and a required `Idempotency-Key` header. It returns HTTP202
 after durable upload acceptance. Poll `GET /analyze/studio/jobs/{id}` with the
