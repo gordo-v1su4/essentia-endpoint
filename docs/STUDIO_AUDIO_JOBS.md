@@ -44,6 +44,18 @@ Explicit `ALLIN1_DEVICE=cpu`/`mps` or unavailable CUDA fails with terminal
 rhythm/RMS computations are not neural GPU models. No classification, tonal,
 pitch, vocal classifier, or embeddings are requested.
 
+Studio also requires `natten.has_cuda()` to succeed. Torch CUDA allocation alone
+is insufficient: NATTEN 0.17.1 built without CUDA can print an unsupported-device
+warning and return invalid finite activations instead of failing inference.
+The Dockerfile forces `NATTEN_WITH_CUDA=1`, builds for `NATTEN_CUDA_ARCH=8.9`
+(VM100's RTX 4090), and verifies the compiled library's `has_cuda()` at build
+time without needing a visible GPU. Other supported deployment hardware must
+set the matching `--build-arg NATTEN_CUDA_ARCH=...`; this CUDA 11.8 stack does
+not support every newer architecture. See the pinned
+[NATTEN 0.17.1 build settings](https://github.com/SHI-Labs/NATTEN/blob/v0.17.1/setup.py)
+and [runtime capability check](https://github.com/SHI-Labs/NATTEN/blob/v0.17.1/src/natten/context.py).
+This preflight applies to Studio only; legacy endpoint behavior is unchanged.
+
 Raw all-in-one labels are retained. `inst`/`solo`/`break` have canonical `bridge`
 labels for existing consumers but distinct `original_label`s. Raw `start`/`end`
 intervals become neutral `section` labels with their exact timing, so a quiet

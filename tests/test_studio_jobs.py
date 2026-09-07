@@ -9,6 +9,7 @@ from pathlib import Path
 import tempfile
 import threading
 import time
+import types
 import unittest
 from unittest.mock import patch
 
@@ -72,8 +73,25 @@ class ResultTests(unittest.TestCase):
                 with self.assertRaises(AllInOneCudaRequiredError): require_studio_cuda()
         with patch.dict(os.environ, {"ALLIN1_DEVICE": "cuda"}), patch("services.allin1_structure._cuda_usable", return_value=False):
             with self.assertRaises(AllInOneCudaRequiredError): require_studio_cuda()
-        with patch.dict(os.environ, {"ALLIN1_DEVICE": "cuda"}), patch("services.allin1_structure._cuda_usable", return_value=True):
+        with patch.dict(os.environ, {"ALLIN1_DEVICE": "cuda"}), patch("services.allin1_structure._cuda_usable", return_value=True), patch.dict("sys.modules", {"natten": types.SimpleNamespace(has_cuda=lambda: True)}):
             self.assertEqual(require_studio_cuda(), "cuda")
+
+    def test_torch_cuda_does_not_accept_cpu_only_or_incompatible_natten(self):
+        for extension in (types.SimpleNamespace(has_cuda=lambda: False), types.SimpleNamespace(), None):
+            with self.subTest(extension=extension), patch.dict(os.environ, {"ALLIN1_DEVICE": "cuda"}), patch("services.allin1_structure._cuda_usable", return_value=True), patch.dict("sys.modules", {"natten": extension}):
+                with self.assertRaises(AllInOneCudaRequiredError):
+                    require_studio_cuda()
+
+    def test_unsupported_natten_stops_before_model_analysis(self):
+        from unittest.mock import Mock
+        analyze = Mock()
+        with patch.dict(os.environ, {"ALLIN1_DEVICE": "cuda"}), patch("services.allin1_structure._cuda_usable", return_value=True), patch.dict("sys.modules", {
+            "natten": types.SimpleNamespace(has_cuda=lambda: False),
+            "allin1": types.SimpleNamespace(analyze=analyze),
+        }):
+            with self.assertRaises(AllInOneCudaRequiredError):
+                analyze_structure_allin1_logic("input.wav", require_cuda=True)
+        analyze.assert_not_called()
 
     def test_allin1_receives_cuda_and_preserves_end_interval(self):
         import types

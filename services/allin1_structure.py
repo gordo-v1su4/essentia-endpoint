@@ -22,6 +22,17 @@ class AllInOneCudaRequiredError(AllInOneStructureError):
 def require_studio_cuda() -> str:
     if os.getenv("ALLIN1_DEVICE", "").strip().lower() not in ("", "cuda") or not _cuda_usable():
         raise AllInOneCudaRequiredError("Studio requires usable CUDA and ALLIN1_DEVICE=cuda; CPU/MPS inference is disabled.")
+    # Torch allocation alone does not validate NATTEN's separate compiled
+    # extension. Its CPU-only build can warn and return invalid finite model
+    # activations on CUDA instead of raising an exception.
+    try:
+        import natten
+
+        supported = natten.has_cuda()
+    except Exception as exc:
+        raise AllInOneCudaRequiredError("Studio requires a compatible CUDA-enabled NATTEN extension.") from exc
+    if not supported:
+        raise AllInOneCudaRequiredError("Studio requires NATTEN compiled with CUDA support; rebuild the image with NATTEN_WITH_CUDA=1 and the target GPU architecture.")
     return "cuda"
 
 
