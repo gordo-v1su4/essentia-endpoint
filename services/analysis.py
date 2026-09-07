@@ -177,153 +177,178 @@ def analyze_rhythm_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[st
         }
     }
 
-def generate_fallback_boundaries(duration: float) -> List[float]:
+def _mfcc_frame_indices_to_seconds(
+    frame_indices: List[float],
+    hop_size: int,
+    sample_rate: int,
+) -> List[float]:
+    return sorted([float(f * hop_size / sample_rate) for f in frame_indices])
+
+
+def _filter_boundary_seconds(
+    bound_secs: List[float],
+    duration: float,
+    min_gap_s: float = 8.0,
+    edge_margin_s: float = 1.0,
+) -> List[float]:
+    filtered: List[float] = []
+    for boundary in bound_secs:
+        if boundary <= edge_margin_s or boundary >= (duration - edge_margin_s):
+            continue
+        if not filtered or (boundary - filtered[-1]) >= min_gap_s:
+            filtered.append(boundary)
+    return filtered
+
+
+class StructureSegmentationError(Exception):
+    """Raised when SBic cannot find usable section boundaries (no heuristic fallback)."""
+
+
+def _build_sbic_feature_matrix(
+    audio: np.ndarray,
+    sample_rate: int,
+) -> tuple[np.ndarray, int]:
     """
-    Generate fallback section boundaries when SBic fails.
-    Creates reasonable sections based on typical song structure.
+    Build the feature matrix SBic expects: features along dim1, frames along dim2.
+
+    Passing (n_frames, n_features) makes Essentia treat the 13 MFCC coeffs as
+    the entire timeline — boundaries collapse to [0, 12] (~0.28s).
     """
-    boundaries = [0.0]
-
-    intro_end = min(duration * 0.10, 15.0)
-    if intro_end > 5:
-        boundaries.append(intro_end)
-
-    main_start = boundaries[-1]
-    outro_start = duration - min(duration * 0.15, 20.0)
-    main_duration = outro_start - main_start
-
-    if main_duration > 20:
-        num_sections = max(2, int(main_duration / 30))
-        section_duration = main_duration / num_sections
-
-        for i in range(1, num_sections):
-            boundaries.append(main_start + i * section_duration)
-
-    if duration - outro_start > 5:
-        boundaries.append(outro_start)
-
-    boundaries.append(duration)
-    return boundaries
-
-def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
-    """
-    Structural segmentation using SBic and SegmentClustering.
-    Processes audio to find boundaries and repeated patterns.
-    """
-    duration = float(len(audio) / sample_rate)
-
     frame_size = 2048
     hop_size = 1024
     w = es.Windowing(type='hann')
     spec = es.Spectrum()
-    mfcc = es.MFCC(numberCoefficients=13)
+    mfcc_algo = es.MFCC(numberCoefficients=13)
 
-    mfccs = []
+    mfcc_frames: List[np.ndarray] = []
     for frame in es.FrameGenerator(audio, frameSize=frame_size, hopSize=hop_size):
-        _, m = mfcc(spec(w(frame)))
-        mfccs.append(m)
+        spectrum = spec(w(frame))
+        _, mfcc_coeffs = mfcc_algo(spectrum)
+        mfcc_frames.append(np.asarray(mfcc_coeffs, dtype=np.float32))
 
-    min_frames = 300
+    if len(mfcc_frames) < 2:
+        raise StructureSegmentationError("Audio too short for structure segmentation.")
 
-    if len(mfccs) < min_frames * 2:
-        print(f"[Structure] Audio too short ({len(mfccs)} frames), using fallback")
-        boundaries_frames = []
-    else:
+    # Essentia SBic: features on dim1, frames on dim2.
+    return np.array(mfcc_frames, dtype=np.float32).T, hop_size
+
+
+def _detect_structure_boundaries(
+    feature_matrix: np.ndarray,
+    duration: float,
+    sample_rate: int,
+    hop_size: int,
+) -> List[float]:
+    n_frames = int(feature_matrix.shape[1])
+    min_frames = max(60, min(300, int(5.0 * sample_rate / hop_size)))
+
+    if n_frames < min_frames * 2:
+        raise StructureSegmentationError(
+            f"Audio too short for structure segmentation ({n_frames} frames, "
+            f"need at least {min_frames * 2})."
+        )
+
+    attempts = [
+        (min_frames, 1.5),
+        (max(40, min_frames // 2), 1.0),
+        (max(30, min_frames // 3), 0.75),
+    ]
+
+    for min_length, cpw in attempts:
         try:
-            sbic = es.SBic(minLength=min_frames, cpw=1.5, size1=300, inc1=60, size2=200, inc2=40)
-            boundaries_frames = sbic(np.array(mfccs, dtype=np.float32))
-            print(f"[Structure] SBic found {len(boundaries_frames)} boundaries: {boundaries_frames}")
+            sbic = es.SBic(
+                minLength=min_length,
+                cpw=cpw,
+                size1=300,
+                inc1=60,
+                size2=200,
+                inc2=40,
+            )
+            boundaries_frames = sbic(feature_matrix)
+            bound_secs = _mfcc_frame_indices_to_seconds(boundaries_frames, hop_size, sample_rate)
+            print(
+                f"[Structure] SBic(minLength={min_length}, cpw={cpw}) "
+                f"frames={boundaries_frames} seconds={[round(s, 2) for s in bound_secs]}"
+            )
+            filtered = _filter_boundary_seconds(bound_secs, duration)
+            if len(filtered) >= 2:
+                return [0.0] + filtered + [duration]
         except Exception as e:
-            print(f"[Structure] SBic failed: {e}, using fallback")
-            boundaries_frames = []
+            print(f"[Structure] SBic attempt failed (minLength={min_length}): {e}")
 
-    bound_secs = sorted([float(f * hop_size / sample_rate) for f in boundaries_frames])
+    raise StructureSegmentationError(
+        "Could not detect song structure (SBic found no usable section boundaries)."
+    )
 
-    filtered_bounds = []
-    for b in bound_secs:
-        if b > 2.0 and b < (duration - 2.0):
-            if not filtered_bounds or (b - filtered_bounds[-1]) >= 5.0:
-                filtered_bounds.append(b)
 
-    boundaries = [0.0] + filtered_bounds + [duration]
-
-    if len(boundaries) <= 2:
-        print(f"[Structure] No boundaries found, generating fallback sections for {duration}s track")
-        boundaries = generate_fallback_boundaries(duration)
-
-    sections = []
-    if len(boundaries) > 2:
-        segment_data = []
-        for i in range(len(boundaries) - 1):
-            start = boundaries[i]
-            end = boundaries[i+1]
-            start_s = int(start * sample_rate)
-            end_s = int(end * sample_rate)
-            chunk = audio[start_s:end_s]
-
-            if len(chunk) > 0:
-                energy = _safe_float(np.mean(chunk**2))
-            else:
-                energy = 0.0
-
-            segment_data.append({
-                "start": _safe_float(start),
-                "end": _safe_float(end),
-                "energy": energy,
-                "pos": _safe_float(((start + end) / 2) / duration)
-            })
-
-        avg_energy = np.mean([s["energy"] for s in segment_data]) if segment_data else 0
-        num_segments = len(segment_data)
-
-        verse_count = 0
-        chorus_count = 0
-
-        for i, s in enumerate(segment_data):
-            label = "section"
-
-            if i == 0 and s["pos"] < 0.15:
-                label = "intro"
-            elif i == num_segments - 1 and s["pos"] > 0.80:
-                label = "outro"
-            elif 0.5 <= s["pos"] <= 0.75 and num_segments >= 5:
-                if abs(s["energy"] - avg_energy) < avg_energy * 0.2:
-                    label = "bridge"
-                elif s["energy"] > avg_energy * 1.1:
-                    label = "chorus"
-                    chorus_count += 1
-                else:
-                    label = "verse"
-                    verse_count += 1
-            else:
-                if s["energy"] > avg_energy * 1.1:
-                    label = "chorus"
-                    chorus_count += 1
-                else:
-                    label = "verse"
-                    verse_count += 1
-
-            sections.append({
-                "start": s["start"],
-                "end": s["end"],
-                "label": label,
-                "duration": _safe_float(s["end"] - s["start"]),
-                "energy": _safe_float(s["energy"])
-            })
-
-        print(f"[Structure] Labeled {num_segments} sections: {verse_count} verse, {chorus_count} chorus")
-    else:
-        sections.append({
-            "start": 0.0,
-            "end": duration,
-            "label": "full",
-            "duration": duration,
-            "energy": 0.0
+def _label_structure_sections(
+    boundaries: List[float],
+    audio: np.ndarray,
+    sample_rate: int,
+    duration: float,
+) -> List[Dict[str, Any]]:
+    segment_data = []
+    for i in range(len(boundaries) - 1):
+        start = boundaries[i]
+        end = boundaries[i + 1]
+        start_s = int(start * sample_rate)
+        end_s = int(end * sample_rate)
+        chunk = audio[start_s:end_s]
+        energy = _safe_float(np.mean(chunk**2)) if len(chunk) > 0 else 0.0
+        segment_data.append({
+            "start": _safe_float(start),
+            "end": _safe_float(end),
+            "energy": energy,
+            "pos": _safe_float(((start + end) / 2) / duration),
         })
 
+    avg_energy = np.mean([s["energy"] for s in segment_data]) if segment_data else 0
+    num_segments = len(segment_data)
+    label_counts: Dict[str, int] = {}
+    sections: List[Dict[str, Any]] = []
+
+    for i, segment in enumerate(segment_data):
+        label = "section"
+
+        if i == 0 and segment["pos"] < 0.15:
+            label = "intro"
+        elif i == num_segments - 1 and segment["pos"] > 0.80:
+            label = "outro"
+        elif segment["energy"] > avg_energy * 1.1:
+            label = "chorus"
+        else:
+            label = "verse"
+
+        label_counts[label] = label_counts.get(label, 0) + 1
+        sections.append({
+            "start": segment["start"],
+            "end": segment["end"],
+            "label": label,
+            "duration": _safe_float(segment["end"] - segment["start"]),
+            "energy": _safe_float(segment["energy"]),
+        })
+
+    summary = ", ".join(f"{count} {name}" for name, count in sorted(label_counts.items()))
+    print(f"[Structure] Labeled {num_segments} sections: {summary}")
+    return sections
+
+
+def analyze_structure_logic(audio: np.ndarray, sample_rate: int = 44100) -> Dict[str, Any]:
+    """
+    Structural segmentation using SBic only — no heuristic fallback.
+    Raises StructureSegmentationError when boundaries cannot be detected.
+    """
+    duration = float(len(audio) / sample_rate)
+    feature_matrix, hop_size = _build_sbic_feature_matrix(audio, sample_rate)
+    boundaries = _detect_structure_boundaries(feature_matrix, duration, sample_rate, hop_size)
+    sections = _label_structure_sections(boundaries, audio, sample_rate, duration)
+
+    print(f"[Structure] source=sbic analyzed_duration_s={duration:.2f} boundaries={len(boundaries)}")
     return {
         "sections": sections,
-        "boundaries": boundaries
+        "boundaries": boundaries,
+        "source": "sbic",
+        "analyzed_duration_s": _safe_float(duration),
     }
 
 

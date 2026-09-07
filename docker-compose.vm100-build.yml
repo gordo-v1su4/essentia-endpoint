@@ -1,0 +1,33 @@
+# VM100 app-vm: build from repo clone (use when Docker Hub pull fails on VM100).
+services:
+  api:
+    build:
+      context: ./repo
+      dockerfile: Dockerfile
+    image: essentia-api:4.1.0-local
+    container_name: essentia-api
+    restart: unless-stopped
+    labels:
+      dockhand.update: "false"
+    env_file:
+      - .env
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      ESSENTIA_MODELS_PATH: /app/models
+      ALLIN1_DEVICE: ${ALLIN1_DEVICE:-cuda}
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    ports:
+      - "18000:8000"
+    gpus: all
+    volumes:
+      - essentia-models:/app/models
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "--max-time", "3", "http://127.0.0.1:8000/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 120s
+      retries: 12
+volumes:
+  essentia-models:
