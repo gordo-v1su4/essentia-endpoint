@@ -29,15 +29,14 @@ RUN uv pip install --system --no-cache -r requirements.txt
 RUN uv pip install --system --no-cache \
     torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 \
     --index-url https://download.pytorch.org/whl/cu118
-# Docker builds normally have no visible GPU. NATTEN otherwise silently builds
-# CPU-only kernels even though Torch has CUDA; VM100 uses an RTX 4090 (SM89).
-ARG NATTEN_CUDA_ARCH=8.9
-ARG NATTEN_N_WORKERS=1
+# Official Linux x86_64 / CPython 3.11 / Torch 2.1 CUDA 11.8 wheel.
+# Its CUDA kernels are verified on VM100; do not substitute a CPU-only build.
 RUN uv pip install --system --no-cache "numpy>=1.24,<2" "setuptools==69.5.1" wheel packaging ninja cmake \
-    && git clone --recursive --depth 1 --branch v0.17.1 https://github.com/SHI-Labs/NATTEN.git /tmp/natten \
-    && cd /tmp/natten && NATTEN_WITH_CUDA=1 NATTEN_CUDA_ARCH="${NATTEN_CUDA_ARCH}" NATTEN_N_WORKERS="${NATTEN_N_WORKERS}" uv pip install --system --no-cache --no-build-isolation . \
+    && curl -fL --retry 3 'https://github.com/SHI-Labs/NATTEN/releases/download/v0.17.1/natten-0.17.1%2Btorch210cu118-cp311-cp311-linux_x86_64.whl' -o '/tmp/natten-0.17.1+torch210cu118-cp311-cp311-linux_x86_64.whl' \
+    && echo '962509c43ed16469a0150db3751d2212268958eaa799f10b38faab479394f272  /tmp/natten-0.17.1+torch210cu118-cp311-cp311-linux_x86_64.whl' | sha256sum -c - \
+    && uv pip install --system --no-deps --reinstall '/tmp/natten-0.17.1+torch210cu118-cp311-cp311-linux_x86_64.whl' \
     && python -c 'from natten import libnatten; assert libnatten.has_cuda(), "NATTEN was built without CUDA support"' \
-    && rm -rf /tmp/natten
+    && rm '/tmp/natten-0.17.1+torch210cu118-cp311-cp311-linux_x86_64.whl'
 RUN uv pip install --system --no-cache git+https://github.com/CPJKU/madmom
 COPY requirements-allin1.txt .
 RUN uv pip install --system --no-cache -r requirements-allin1.txt

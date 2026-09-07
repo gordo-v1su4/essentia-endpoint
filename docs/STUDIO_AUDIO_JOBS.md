@@ -47,13 +47,22 @@ pitch, vocal classifier, or embeddings are requested.
 Studio also requires `natten.has_cuda()` to succeed. Torch CUDA allocation alone
 is insufficient: NATTEN 0.17.1 built without CUDA can print an unsupported-device
 warning and return invalid finite activations instead of failing inference.
-The Dockerfile forces `NATTEN_WITH_CUDA=1`, builds for `NATTEN_CUDA_ARCH=8.9`
-(VM100's RTX 4090), and verifies the compiled library's `has_cuda()` at build
-time without needing a visible GPU. Other supported deployment hardware must
-set the matching `--build-arg NATTEN_CUDA_ARCH=...`; this CUDA 11.8 stack does
-not support every newer architecture. Compilation defaults to one worker to
-fit VM100's available memory; builders with more memory can override
-`--build-arg NATTEN_N_WORKERS=...`. See the pinned
+The Dockerfile installs the official NATTEN 0.17.1 wheel for **Linux x86_64,
+CPython 3.11, Torch 2.1, CUDA 11.8**, matching this image's Torch 2.1.2 ABI.
+The pinned wheel is `natten-0.17.1+torch210cu118-cp311-cp311-linux_x86_64.whl`,
+with SHA256 `962509c43ed16469a0150db3751d2212268958eaa799f10b38faab479394f272`.
+The build checks this digest before installing without dependency changes,
+then verifies the compiled library's `has_cuda()` without needing a visible GPU.
+The exact wheel passed CUDA 1D/2D query-key and attention-value kernel probes on
+VM100's RTX 4090. These probes validate kernel execution, not song predictions.
+This artifact is platform-bound; changing Python, Torch, CUDA or architecture
+requires a compatible artifact and fresh runtime verification.
+
+For an optional manual source build, clone v0.17.1 with `--recursive` to include
+CUTLASS, and set `NATTEN_WITH_CUDA=1`, `NATTEN_CUDA_ARCH=8.9` for the RTX 4090,
+and `NATTEN_N_WORKERS=1` to bound compilation memory. Other GPUs require the
+appropriate supported architecture; CUDA 11.8 does not support every newer GPU.
+These source-build settings are not Docker build arguments. See the pinned
 [NATTEN 0.17.1 build settings](https://github.com/SHI-Labs/NATTEN/blob/v0.17.1/setup.py)
 and [runtime capability check](https://github.com/SHI-Labs/NATTEN/blob/v0.17.1/src/natten/context.py).
 This preflight applies to Studio only; legacy endpoint behavior is unchanged.
