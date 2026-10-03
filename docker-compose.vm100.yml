@@ -1,4 +1,4 @@
-# Production compose for VM100 app-vm (4090). Copy to /opt/essentia-endpoint/docker-compose.yml
+# Production compose for VM100 app-vm (RTX 4070 Ti). Copy to /opt/essentia-endpoint/docker-compose.yml
 services:
   api:
     image: ${ESSENTIA_IMAGE:-gordov1su4/essentia-api:4.1.0}
@@ -20,15 +20,22 @@ services:
     ports:
       - "18000:8000"
     gpus: all
+    # Keep GPU nodes in the OCI spec across systemd daemon-reload.
+    devices:
+      - /dev/nvidia0:/dev/nvidia0
+      - /dev/nvidiactl:/dev/nvidiactl
+      - /dev/nvidia-uvm:/dev/nvidia-uvm
+      - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+      - /dev/nvidia-modeset:/dev/nvidia-modeset
     volumes:
       - essentia-models:/app/models
       - essentia-studio-jobs:/app/studio-jobs
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "--max-time", "3", "http://127.0.0.1:8000/health"]
-      interval: 10s
-      timeout: 5s
-      start_period: 60s
-      retries: 12
+      test: ["CMD", "python", "-c", "import json, subprocess, urllib.request; assert json.load(urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)).get('status') == 'ok'; probe = subprocess.run(['nvidia-smi', '-L'], capture_output=True, text=True, timeout=5, check=True); assert 'GPU ' in probe.stdout"]
+      interval: 30s
+      timeout: 15s
+      start_period: 90s
+      retries: 3
 volumes:
   essentia-models:
   essentia-studio-jobs:
