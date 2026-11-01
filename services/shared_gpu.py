@@ -9,6 +9,14 @@ import time
 state = threading.local()
 
 
+class GpuQueueTimeoutError(RuntimeError):
+    pass
+
+
+def gpu_queue_timeout():
+    return float(os.getenv('GPU_LOCK_TIMEOUT_SECONDS', '900'))
+
+
 @contextmanager
 def gpu_lease():
     path = os.getenv('GPU_LOCK_PATH', '').strip()
@@ -16,7 +24,7 @@ def gpu_lease():
         yield
         return
     import fcntl
-    timeout = float(os.getenv('GPU_LOCK_TIMEOUT_SECONDS', '900'))
+    timeout = gpu_queue_timeout()
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     with target.open('a') as handle:
@@ -27,7 +35,7 @@ def gpu_lease():
                 break
             except BlockingIOError:
                 if time.monotonic() - started >= timeout:
-                    raise RuntimeError('GPU is busy; shared GPU queue wait timed out.')
+                    raise GpuQueueTimeoutError('GPU is busy; shared GPU queue wait timed out.')
                 time.sleep(0.1)
         state.depth = 1
         try:

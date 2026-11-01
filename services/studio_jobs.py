@@ -15,6 +15,7 @@ import time
 import uuid
 
 from services.studio_analysis import validate_studio_result
+from services.shared_gpu import gpu_queue_timeout
 
 log = logging.getLogger(__name__)
 TERMINAL = {"completed", "failed"}
@@ -92,20 +93,34 @@ def isolated_analysis(path: Path, progress, settings: JobSettings, stopping=lamb
             while process.poll() is None:
                 if stopping():
                     raise JobError(422, "interrupted", "Server stopped before analysis completed. Submit a new job to retry.")
-                if time.monotonic() - start > settings.timeout_seconds:
-                    raise JobError(422, "analysis_timeout", "Audio analysis exceeded its time limit.")
                 if directory_bytes(path.parent) > settings.max_scratch_bytes + settings.max_upload_bytes:
                     raise JobError(422, "analysis_storage_limit", "Audio analysis exceeded its temporary storage limit.")
+                deadline = start + settings.timeout_seconds
+                waiting = False
                 if stage.exists():
-                    value = stage.read_text()
-                    if value in {"decoding", "rhythm", "structure", "validating"} and value != previous:
+                    state = json.loads(stage.read_text())
+                    value = state["stage"]
+                    if "starting" in state:
+                        # Child timestamps survive stage changes between polls.
+                        # CUDA probing/imports count as processing, GPU waiting does not.
+                        deadline = state["starting"] + settings.timeout_seconds
+                    elif value == "waiting_gpu":
+                        waiting = True
+                        deadline = state["waiting_gpu"] + gpu_queue_timeout()
+                    if value in {"waiting_gpu", "starting", "decoding", "rhythm", "structure", "validating"} and value != previous:
                         progress(value)
                         previous = value
+                if time.monotonic() > deadline:
+                    if waiting:
+                        raise JobError(422, "gpu_queue_timeout", "GPU is busy; shared GPU queue wait timed out.")
+                    raise JobError(422, "analysis_timeout", "Audio analysis exceeded its time limit.")
                 time.sleep(0.25)
             if process.returncode != 0 or not output.is_file():
                 error_file = path.parent / "error.json"
                 if error_file.is_file() and json.loads(error_file.read_text()).get("code") == "cuda_unavailable":
                     raise JobError(422, "cuda_unavailable", "Studio requires usable CUDA and ALLIN1_DEVICE=cuda; CPU/MPS inference is disabled.")
+                if error_file.is_file() and json.loads(error_file.read_text()).get("code") == "gpu_queue_timeout":
+                    raise JobError(422, "gpu_queue_timeout", "GPU is busy; shared GPU queue wait timed out.")
                 # Detailed provider logs remain server-side, never in API errors.
                 log.error("Studio analyzer failed for job %s", path.parent.name)
                 raise JobError(422, "analysis_failed", "Audio analysis failed; no estimated structure was substituted.")
