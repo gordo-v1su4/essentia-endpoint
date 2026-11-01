@@ -12,6 +12,7 @@ services:
       - METRICS_TOKEN=${METRICS_TOKEN}  # Internal Prometheus scrape token
       - ESSENTIA_MODELS_PATH=/app/models
       - ALLIN1_DEVICE=${ALLIN1_DEVICE:-cuda}
+      - GPU_LOCK_PATH=/gpu-lock/stack-structure-gpu.lock
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - TONAL_CREPE_MODEL=${TONAL_CREPE_MODEL:-auto}
@@ -22,6 +23,7 @@ services:
     gpus: all
     volumes:
       - essentia-models:/app/models
+      - /var/lock/stack-structure-gpu:/gpu-lock
     deploy:
       resources:
         reservations:

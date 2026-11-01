@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Callable
 
 from api.studio_models import StudioAnalysis
+from .shared_gpu import shared_gpu
 
 SAMPLE_RATE = 44100
 RMS_HOP = 512
@@ -84,6 +85,7 @@ def build_studio_result(rhythm: dict, structure: dict, model: str) -> dict:
     return result
 
 
+@shared_gpu
 def analyze_studio_file(path: str, progress: Callable[[str], None]) -> dict:
     # Lazy imports keep API/job lifecycle independent from inference startup.
     from services.allin1_structure import analyze_structure_allin1_logic, require_studio_cuda

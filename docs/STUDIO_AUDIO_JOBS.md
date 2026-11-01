@@ -145,3 +145,14 @@ Tests fake the analyzer and cover durable restart behavior, auth/owner isolation
 idempotency, queue/storage/upload limits, live stages, CUDA-only guards, timing
 validation, and raw start/end labels. They do not substitute for a real CUDA song
 job, actual output inspection, and application polling verification after deployment.
+# Shared GPU coordination
+
+VM100 sets `GPU_LOCK_PATH=/gpu-lock/stack-structure-gpu.lock` and mounts
+`/var/lock/stack-structure-gpu:/gpu-lock`. Studio inference and legacy AllInOne
+structure calls acquire the same host lock as Qwen, Beatsmaxxer interpolation,
+and Splitter SAM 3. Nested calls reuse the lease, exceptions release it, and
+waits time out explicitly after `GPU_LOCK_TIMEOUT_SECONDS` (default 900).
+The existing Studio subprocess lifecycle still releases model VRAM on exit.
+Deploy through the existing Dockhand Internal stack; preserve its image base,
+private environment settings, and model/job volumes.
+
