@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Any, Dict, List
+from .shared_gpu import shared_gpu
 
 
 class AllInOneStructureError(Exception):
@@ -116,6 +117,7 @@ def _merge_adjacent_sections(sections: List[Dict[str, Any]]) -> List[Dict[str, A
     return merged
 
 
+@shared_gpu
 def analyze_structure_allin1_logic(file_path: str, *, workspace: Path | None = None, preserve_labels: bool = False, require_cuda: bool = False) -> Dict[str, Any]:
     """
     Run all-in-one on a WAV/MP3 file path and map segments to StructureAnalysis shape.

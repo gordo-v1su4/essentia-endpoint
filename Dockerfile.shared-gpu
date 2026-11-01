@@ -1,0 +1,4 @@
+# Source-only layer over the verified Studio CUDA runtime; preserve model/toolchain.
+ARG BASE_IMAGE=essentia-api:studio-59550eb
+FROM ${BASE_IMAGE}
+COPY services/shared_gpu.py services/allin1_structure.py services/studio_analysis.py /app/services/

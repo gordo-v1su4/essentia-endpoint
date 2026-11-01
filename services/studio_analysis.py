@@ -3,10 +3,12 @@ import json
 import math
 import os
 import subprocess
+import time
 from pathlib import Path
 from typing import Callable
 
 from api.studio_models import StudioAnalysis
+from .shared_gpu import gpu_lease, GpuQueueTimeoutError
 
 SAMPLE_RATE = 44100
 RMS_HOP = 512
@@ -85,6 +87,13 @@ def build_studio_result(rhythm: dict, structure: dict, model: str) -> dict:
 
 
 def analyze_studio_file(path: str, progress: Callable[[str], None]) -> dict:
+    progress("waiting_gpu")
+    with gpu_lease():
+        progress("starting")
+        return _analyze_studio_file(path, progress)
+
+
+def _analyze_studio_file(path: str, progress: Callable[[str], None]) -> dict:
     # Lazy imports keep API/job lifecycle independent from inference startup.
     from services.allin1_structure import analyze_structure_allin1_logic, require_studio_cuda
     require_studio_cuda()
@@ -109,12 +118,14 @@ def analyze_studio_file(path: str, progress: Callable[[str], None]) -> dict:
     return build_studio_result(rhythm, structure, os.getenv("ALLIN1_MODEL", "harmonix-all").strip() or "harmonix-all")
 
 
-if __name__ == "__main__":
-    import sys
-    path, output, stage = map(Path, sys.argv[1:])
+def run_studio_analysis(path: Path, output: Path, stage: Path):
+    """Publish atomic stage/timing updates for the supervising process."""
+    timing = {}
     def progress(value):
+        if value in {"waiting_gpu", "starting"}:
+            timing[value] = time.monotonic()
         temporary = stage.with_suffix(".tmp")
-        temporary.write_text(value)
+        temporary.write_text(json.dumps({"stage": value, **timing}))
         temporary.replace(stage)
     try:
         result = analyze_studio_file(str(path), progress)
@@ -122,7 +133,14 @@ if __name__ == "__main__":
         from services.allin1_structure import AllInOneCudaRequiredError
         if isinstance(exc, AllInOneCudaRequiredError):
             (path.parent / "error.json").write_text(json.dumps({"code": "cuda_unavailable"}))
+        elif isinstance(exc, GpuQueueTimeoutError):
+            (path.parent / "error.json").write_text(json.dumps({"code": "gpu_queue_timeout"}))
         raise
     temporary = output.with_suffix(".tmp")
     temporary.write_text(json.dumps(result, allow_nan=False))
     temporary.replace(output)
+
+
+if __name__ == "__main__":
+    import sys
+    run_studio_analysis(*map(Path, sys.argv[1:]))

@@ -12,7 +12,7 @@ same API key; HTTP200 returns state, with a result only after completion.
 ```
 
 States are `queued`, `running`, `completed`, `failed`. Stages additionally report
-`starting`, `decoding`, `rhythm`, `structure`, `validating`, `interrupted`.
+`starting`, `waiting_gpu`, `decoding`, `rhythm`, `structure`, `validating`, `interrupted`.
 Failure returns `error: {code, message}` and no result. There is no automatic
 retry or estimated song-structure fallback. A new explicit retry needs a new
 idempotency key. Identical key/file requests reuse the original job while it is
@@ -109,6 +109,7 @@ never returned to clients.
 | `STUDIO_MAX_RESULT_BYTES` |8388608 | Maximum serialized result |
 | `STUDIO_TTL_SECONDS` |86400 | Completed/failed job retention |
 | `STUDIO_TIMEOUT_SECONDS` |1200 | Per-job inference deadline; excludes queue wait |
+| `GPU_LOCK_TIMEOUT_SECONDS` |900 | Maximum shared GPU queue wait when `GPU_LOCK_PATH` is configured |
 | `STUDIO_MAX_AUDIO_SECONDS` |1800 | Maximum decoded/probed audio duration |
 | `ALLIN1_DEVICE` |`cuda` in VM100 compose | Studio accepts CUDA only |
 | `ALLIN1_MODEL` |`harmonix-all` | Functional section model |
@@ -120,6 +121,13 @@ process supervised for timeout and scratch size, with its process group killed
 on failure/shutdown. A quarter-second disk polling interval can permit a small
 temporary overshoot; mount a filesystem quota if a strict OS-enforced cap is
 required. Host-level Torch/Demucs model caches are separate from per-job scratch.
+
+While the shared host GPU is occupied, a running job reports `waiting_gpu`.
+This wait has its own `GPU_LOCK_TIMEOUT_SECONDS` budget and fails with
+`gpu_queue_timeout` if exhausted. After acquiring the lease, the worker receives
+the full `STUDIO_TIMEOUT_SECONDS` budget, including CUDA initialization, decoding,
+and inference. Startup before the worker reports a stage is also bounded by
+`STUDIO_TIMEOUT_SECONDS`. Shutdown and scratch limits apply during GPU waiting.
 
 On restart, queued/running jobs become failed/interrupted, never silently
 recomputed. Completed results remain retrievable until TTL expiry. Uploads and
@@ -145,3 +153,14 @@ Tests fake the analyzer and cover durable restart behavior, auth/owner isolation
 idempotency, queue/storage/upload limits, live stages, CUDA-only guards, timing
 validation, and raw start/end labels. They do not substitute for a real CUDA song
 job, actual output inspection, and application polling verification after deployment.
+# Shared GPU coordination
+
+VM100 sets `GPU_LOCK_PATH=/gpu-lock/stack-structure-gpu.lock` and mounts
+`/var/lock/stack-structure-gpu:/gpu-lock`. Studio inference and legacy AllInOne
+structure calls acquire the same host lock as Qwen, Beatsmaxxer interpolation,
+and Splitter SAM 3. Nested calls reuse the lease, exceptions release it, and
+waits time out explicitly after `GPU_LOCK_TIMEOUT_SECONDS` (default 900).
+The existing Studio subprocess lifecycle still releases model VRAM on exit.
+Deploy through the existing Dockhand Internal stack; preserve its image base,
+private environment settings, and model/job volumes.
+
